@@ -1,0 +1,8 @@
+const firebaseConfig = {
+  apiKey: "AIzaSyCgRVnlbEyYo4hcWd_jMOkx9EpG5FvlteM",
+  authDomain: "minhasfinancasmorassutti.firebaseapp.com",
+  projectId: "minhasfinancasmorassutti",
+  storageBucket: "minhasfinancasmorassutti.firebasestorage.app",
+  messagingSenderId: "78637245037",
+  appId: "1:78637245037:web:826235cdfa0d6a482f1564"
+};

@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minha Gestão Financeira - Demo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .reconcile-checkbox { width: 1.25rem; height: 1.25rem; accent-color: #4f46e5; }
+        .tab-btn.active { border-bottom-color: #4f46e5; color: #4f46e5; }
+        details summary { cursor: pointer; list-style: none; }
+        details summary::-webkit-details-marker { display: none; }
+        details summary::before { content: '►'; display: inline-block; margin-right: 0.5rem; transition: transform 0.2s ease; }
+        details[open] summary::before { transform: rotate(90deg); }
+        .dashboard-card { background-color: white; padding: 0.75rem; border-radius: 0.75rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.07), 0 1px 2px -1px rgb(0 0 0 / 0.07); border: 1px solid #e2e8f0; }
+        .dashboard-card-title { font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+        .dashboard-card-value { font-size: 1.25rem; font-weight: 600; margin-top: 0.25rem; }
+        .btn-icon-hover { @apply p-1.5 rounded-full text-slate-400 hover:bg-slate-100 hover:text-indigo-600 transition-colors duration-200; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800">
+    <!-- Loading/Login Screen -->
+    <div id="loading-view" class="flex flex-col items-center justify-center h-screen bg-slate-50">
+        <div class="text-center p-8">
+            <svg class="h-12 w-12 text-indigo-600 mx-auto animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <h1 class="text-3xl font-bold text-slate-800 mt-4">Minha gestão financeira</h1>
+            <p class="text-slate-500 mt-2">Carregando e autenticando...</p>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app-container" class="hidden">
+        <!-- Header -->
+        <header class="bg-white shadow-sm sticky top-0 z-20">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center space-x-3">
+                        <svg class="h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/></svg>
+                        <h1 class="text-xl font-bold text-slate-800 hidden sm:block">Minha gestão financeira</h1>
+                    </div>
+                    <div id="main-controls" class="hidden flex items-center space-x-1 sm:space-x-2">
+                        <div id="user-info" class="flex items-center gap-2 mr-2">
+                           <span id="user-id-display" class="text-xs font-mono text-slate-400 hidden md:block" title="ID de Usuário Anônimo"></span>
+                           <button id="reset-data-btn" class="text-slate-500 hover:text-red-600 transition-colors duration-200 p-2 rounded-full" title="Resetar Dados (nova sessão)">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-refresh-cw"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                           </button>
+                        </div>
+                        <button id="add-account-btn" class="bg-white border border-slate-300 text-slate-600 px-2.5 py-1.5 rounded-md font-semibold hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 text-xs shadow-sm"><span>Nova Conta</span></button>
+                        <button id="add-credit-card-btn" class="bg-white border border-slate-300 text-slate-600 px-2.5 py-1.5 rounded-md font-semibold hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 text-xs shadow-sm"><span>Novo Cartão</span></button>
+                        <button id="add-investment-asset-btn" class="bg-white border border-slate-300 text-slate-600 px-2.5 py-1.5 rounded-md font-semibold hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 text-xs shadow-sm"><span>Novo Ativo</span></button>
+                        <button id="add-immobilized-asset-btn" class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md font-semibold transition-all duration-200 text-xs shadow-sm hover:shadow-md transform hover:-translate-y-px"><span>+ Imob.</span></button>
+                        <button id="add-other-asset-btn" class="bg-pink-600 text-white px-2.5 py-1.5 rounded-md font-semibold transition-all duration-200 text-xs shadow-sm hover:shadow-md transform hover:-translate-y-px"><span>+ Outros</span></button>
+                        <button id="add-category-btn" class="bg-white border border-slate-300 text-slate-600 px-2.5 py-1.5 rounded-md font-semibold hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 text-xs shadow-sm"><span>Nova Categoria</span></button>
+                        <button id="add-transaction-btn" class="bg-indigo-600 text-white px-2.5 py-1.5 rounded-md font-semibold transition-all duration-200 text-xs shadow-sm hover:shadow-md transform hover:-translate-y-px"><span>+ Transação</span></button>
+                        <button id="add-cc-transaction-btn" class="bg-purple-600 text-white px-2.5 py-1.5 rounded-md font-semibold transition-all duration-200 text-xs shadow-sm hover:shadow-md transform hover:-translate-y-px"><span>+ Cartão</span></button>
+                        <button id="add-investment-transaction-btn" class="bg-cyan-600 text-white px-2.5 py-1.5 rounded-md font-semibold transition-all duration-200 text-xs shadow-sm hover:shadow-md transform hover:-translate-y-px"><span>+ Invest.</span></button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Tab Navigation -->
+        <div class="border-b border-slate-200 bg-white">
+            <nav class="container mx-auto -mb-px flex space-x-8 px-4 sm:px-6 lg:px-8" aria-label="Tabs">
+                <button id="tab-main" class="tab-btn active whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium">Principal</button>
+                <button id="tab-dashboard" class="tab-btn whitespace-nowrap border-b-2 border-transparent py-4 px-1 text-sm font-medium text-slate-500 hover:border-slate-300 hover:text-slate-700">Dashboard</button>
+            </nav>
+        </div>
+
+        <!-- Main Content View -->
+        <main id="view-main" class="container mx-auto p-4 sm:p-6 lg:p-8">
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
+                <div class="dashboard-card"><h3 class="dashboard-card-title">Receitas</h3><p id="total-income" class="dashboard-card-value text-green-600">R$ 0,00</p></div>
+                <div class="dashboard-card"><h3 class="dashboard-card-title">Despesas</h3><p id="total-expenses" class="dashboard-card-value text-red-600">R$ 0,00</p></div>
+                <div class="dashboard-card"><h3 class="dashboard-card-title">Saldo do Mês</h3><p id="month-balance" class="dashboard-card-value text-slate-800">R$ 0,00</p></div>
+                <div class="dashboard-card"><h3 class="dashboard-card-title">Saldo em Contas</h3><p id="balance" class="dashboard-card-value text-slate-800">R$ 0,00</p></div>
+                <div class="dashboard-card"><h3 class="dashboard-card-title">Limite Disponível</h3><p id="available-limit" class="dashboard-card-value text-blue-600">R$ 0,00</p></div>
+                <div class="dashboard-card"><h3 class="dashboard-card-title">Fatura Cartão</h3><p id="credit-card-bill" class="dashboard-card-value text-purple-600">R$ 0,00</p></div>
+                <div class="dashboard-card"><h3 class="dashboard-card-title">Total Investido</h3><p id="total-invested" class="dashboard-card-value text-cyan-600">R$ 0,00</p></div>
+                <div class="dashboard-card"><h3 class="dashboard-card-title">Total Imobilizado</h3><p id="total-immobilized" class="dashboard-card-value text-gray-700">R$ 0,00</p></div>
+                <div class="dashboard-card"><h3 class="dashboard-card-title">Total Outros</h3><p id="total-others" class="dashboard-card-value text-pink-700">R$ 0,00</p></div>
+                <div class="dashboard-card col-span-2 lg:col-span-1"><h3 class="dashboard-card-title">Total Geral</h3><p id="grand-total" class="dashboard-card-value text-indigo-800">R$ 0,00</p></div>
+            </div>
+
+            <!-- Filters -->
+            <div class="mb-6 bg-white p-3 rounded-xl shadow-sm border">
+                <div class="flex flex-col sm:flex-row items-center gap-4">
+                    <h3 class="text-md font-semibold text-slate-700 whitespace-nowrap">Filtrar por:</h3>
+                    <div class="w-full sm:w-auto"><select id="month-filter" class="w-full rounded-md border-slate-300 shadow-sm text-sm"></select></div>
+                    <div class="w-full sm:w-auto"><select id="year-filter" class="w-full rounded-md border-slate-300 shadow-sm text-sm"></select></div>
+                </div>
+            </div>
+
+            <!-- Sections -->
+            <div class="grid grid-cols-1 gap-8">
+                <div><h3 class="text-xl font-bold mb-4 text-slate-700">Minhas Contas</h3><div id="accounts-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"><p class="text-slate-500 col-span-full">Nenhuma conta criada.</p></div></div>
+                <div class="mt-4"><h3 class="text-xl font-bold mb-4 text-slate-700">Meus Cartões</h3><div id="credit-cards-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"><p class="text-slate-500 col-span-full">Nenhum cartão criado.</p></div></div>
+                <div class="mt-4"><h3 class="text-xl font-bold mb-4 text-slate-700">Meus Investimentos</h3><div id="investments-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"><p class="text-slate-500 col-span-full">Nenhum ativo de investimento criado.</p></div></div>
+                <div class="mt-4"><h3 class="text-xl font-bold mb-4 text-slate-700">Imobilizado</h3><div id="immobilized-assets-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"><p class="text-slate-500 col-span-full">Nenhum ativo imobilizado criado.</p></div></div>
+                <div class="mt-4"><h3 class="text-xl font-bold mb-4 text-slate-700">Outros</h3><div id="other-assets-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"><p class="text-slate-500 col-span-full">Nenhum outro ativo criado.</p></div></div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border"><h3 class="text-xl font-bold mb-4">Transações no Período</h3><div id="transactions-list" class="space-y-2"><p class="text-slate-500">Nenhuma transação registrada.</p></div></div>
+            </div>
+        </main>
+
+        <!-- Dashboard View -->
+        <main id="view-dashboard" class="hidden container mx-auto p-4 sm:p-6 lg:p-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Details Table -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border lg:col-span-2">
+                    <div class="flex flex-wrap justify-between items-center mb-4 gap-4">
+                        <h3 class="text-xl font-bold">Detalhamento de Receitas e Despesas</h3>
+                        <div class="flex items-center gap-2">
+                            <select id="dashboard-table-month-filter" class="text-sm rounded-md border-slate-300"></select>
+                            <select id="dashboard-table-year-filter" class="text-sm rounded-md border-slate-300"></select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h4 class="text-lg font-semibold text-slate-700 mb-2">Receitas do Período</h4>
+                            <div class="overflow-auto max-h-96">
+                                <table class="min-w-full text-sm">
+                                    <thead class="bg-slate-100 sticky top-0">
+                                        <tr><th class="p-2 text-left">Data</th><th class="p-2 text-left">Descrição</th><th class="p-2 text-right">Valor</th></tr>
+                                    </thead>
+                                    <tbody id="income-details-table"></tbody>
+                                    <tfoot class="bg-slate-100 font-bold sticky bottom-0">
+                                        <tr><td colspan="2" class="p-2 text-right">Total:</td><td id="income-details-total" class="p-2 text-right">R$ 0,00</td></tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-semibold text-slate-700 mb-2">Despesas do Período</h4>
+                            <div class="overflow-auto max-h-96">
+                                <table class="min-w-full text-sm">
+                                    <thead class="bg-slate-100 sticky top-0">
+                                        <tr><th class="p-2 text-left">Data</th><th class="p-2 text-left">Descrição</th><th class="p-2 text-right">Valor</th></tr>
+                                    </thead>
+                                    <tbody id="expense-details-table"></tbody>
+                                     <tfoot class="bg-slate-100 font-bold sticky bottom-0">
+                                        <tr><td colspan="2" class="p-2 text-right">Total:</td><td id="expense-details-total" class="p-2 text-right">R$ 0,00</td></tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Saldo Diario Projetado -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border lg:col-span-2">
+                    <div class="flex flex-wrap justify-between items-center mb-4 gap-4">
+                        <h3 class="text-xl font-bold">Saldo Diário Projetado</h3>
+                        <div class="flex items-center gap-2">
+                            <select id="projected-balance-month-filter" class="text-sm rounded-md border-slate-300"></select>
+                            <select id="projected-balance-year-filter" class="text-sm rounded-md border-slate-300"></select>
+                        </div>
+                    </div>
+                    <div class="overflow-auto max-h-96">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-slate-100 sticky top-0">
+                                <tr>
+                                    <th class="p-2 text-left">Data</th>
+                                    <th class="p-2 text-right">Receitas do Dia</th>
+                                    <th class="p-2 text-right">Despesas do Dia</th>
+                                    <th class="p-2 text-right">Saldo Projetado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="projected-balance-table-body">
+                                <!-- Rows will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Pie Charts -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold">Resumo por Categoria</h3>
+                        <div class="flex items-center gap-2">
+                            <select id="dashboard-month-filter" class="text-sm rounded-md border-slate-300"></select>
+                            <select id="dashboard-year-filter-pie" class="text-sm rounded-md border-slate-300"></select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div><h4 class="text-center font-semibold text-slate-600">Receitas por Categoria</h4><div class="relative h-64"><canvas id="income-pie-chart"></canvas></div></div>
+                        <div><h4 class="text-center font-semibold text-slate-600">Despesas por Categoria</h4><div class="relative h-64"><canvas id="expense-pie-chart"></canvas></div></div>
+                    </div>
+                </div>
+
+                <!-- Line/Bar Charts -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold">Evolução Mensal (Geral)</h3>
+                        <select id="dashboard-year-filter-lines" class="text-sm rounded-md border-slate-300"></select>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div><h4 class="text-center font-semibold text-slate-600">Saldo (Receita - Despesa)</h4><div class="relative h-64"><canvas id="balance-line-chart"></canvas></div></div>
+                        <div><h4 class="text-center font-semibold text-slate-600">Receitas vs Despesas</h4><div class="relative h-64"><canvas id="income-expense-bar-chart"></canvas></div></div>
+                    </div>
+                </div>
+
+                <!-- Category Evolution Charts -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border lg:col-span-2">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                             <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+                                 <h3 class="text-lg font-bold">Evolução de Despesas por Categoria</h3>
+                                 <div class="flex items-center gap-2">
+                                     <select id="dashboard-year-filter-expense-cat" class="text-sm rounded-md border-slate-300"></select>
+                                     <select id="dashboard-expense-cat-filter" class="text-sm rounded-md border-slate-300"></select>
+                                 </div>
+                             </div>
+                            <div class="relative h-72"><canvas id="expense-category-line-chart"></canvas></div>
+                        </div>
+                        <div>
+                            <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+                                <h3 class="text-lg font-bold">Evolução de Receitas por Categoria</h3>
+                                <div class="flex items-center gap-2">
+                                    <select id="dashboard-year-filter-income-cat" class="text-sm rounded-md border-slate-300"></select>
+                                    <select id="dashboard-income-cat-filter" class="text-sm rounded-md border-slate-300"></select>
+                                </div>
+                            </div>
+                            <div class="relative h-72"><canvas id="income-category-line-chart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Expense Type vs Income Chart -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border lg:col-span-2">
+                     <div class="flex justify-between items-center mb-4">
+                         <h3 class="text-xl font-bold">Tipo de Despesa vs. Receita</h3>
+                         <div class="flex items-center gap-2">
+                             <select id="dashboard-month-filter-expense-type" class="text-sm rounded-md border-slate-300"></select>
+                             <select id="dashboard-year-filter-expense-type" class="text-sm rounded-md border-slate-300"></select>
+                         </div>
+                     </div>
+                    <div class="relative h-72"><canvas id="expense-type-pie-chart"></canvas></div>
+                </div>
+
+                <!-- Investment Composition Charts -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border lg:col-span-2">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold">Composição de Investimentos</h3>
+                        <div class="flex items-center gap-2">
+                            <label for="dashboard-invest-type-filter-composition" class="text-sm font-medium">Filtrar por tipo:</label>
+                            <select id="dashboard-invest-type-filter-composition" class="text-sm rounded-md border-slate-300"></select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
+                        <div><h4 class="text-center font-semibold text-slate-600">Carteira por Tipo de Ativo</h4><div class="relative h-72"><canvas id="invest-type-pie-chart"></canvas></div></div>
+                        <div><h4 class="text-center font-semibold text-slate-600">Carteira por Ativo</h4><div class="relative h-72"><canvas id="invest-asset-pie-chart"></canvas></div></div>
+                    </div>
+                </div>
+                
+                <!-- Monthly Investment Return % Chart -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border lg:col-span-2">
+                    <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+                        <h3 class="text-xl font-bold">Rendimento Mensal de Investimentos (%)</h3>
+                        <div class="flex items-center gap-4">
+                            <div class="flex items-center gap-2"><label for="dashboard-year-filter-returns-percent" class="text-sm font-medium">Ano:</label><select id="dashboard-year-filter-returns-percent" class="text-sm rounded-md border-slate-300"></select></div>
+                            <div class="flex items-center gap-2"><label for="dashboard-invest-type-filter-returns-percent" class="text-sm font-medium">Tipo:</label><select id="dashboard-invest-type-filter-returns-percent" class="text-sm rounded-md border-slate-300"></select></div>
+                        </div>
+                    </div>
+                    <div class="mt-4 relative h-72"><canvas id="investment-returns-percent-chart"></canvas></div>
+                </div>
+
+                <!-- Investment Returns by Type Chart -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border lg:col-span-2">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold">Rendimentos por Tipo de Investimento (Valor)</h3>
+                        <div class="flex items-center gap-2">
+                            <label for="dashboard-year-filter-returns-type" class="text-sm font-medium">Ano:</label>
+                            <select id="dashboard-year-filter-returns-type" class="text-sm rounded-md border-slate-300"></select>
+                        </div>
+                    </div>
+                    <div class="mt-4 relative h-72"><canvas id="investment-returns-by-type-chart"></canvas></div>
+                </div>
+
+                <!-- Investment Returns by Asset Chart -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border lg:col-span-2">
+                    <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+                        <h3 class="text-xl font-bold">Rendimento por Ativo (Nome/Ticker)</h3>
+                        <div class="flex items-center gap-4">
+                            <div class="flex items-center gap-2"><label for="dashboard-invest-type-filter-returns-asset" class="text-sm font-medium">Tipo:</label><select id="dashboard-invest-type-filter-returns-asset" class="text-sm rounded-md border-slate-300"></select></div>
+                            <div class="flex items-center gap-2"><label for="dashboard-year-filter-returns-asset" class="text-sm font-medium">Ano:</label><select id="dashboard-year-filter-returns-asset" class="text-sm rounded-md border-slate-300"></select></div>
+                        </div>
+                    </div>
+                    <div class="mt-4 relative h-96"><canvas id="investment-returns-by-asset-chart"></canvas></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="account-modal" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden items-center justify-center"><div class="bg-white rounded-xl shadow-2xl w-full max-w-md m-4 p-8"><div class="flex justify-between items-center mb-6"><h2 id="account-modal-title" class="text-2xl font-bold">Nova Conta</h2><button type="button" class="close-modal-btn text-2xl font-bold text-slate-400">&times;</button></div><form id="account-form" class="space-y-4"><input type="hidden" id="edit-account-id"><div><label>Nome da Conta</label><input type="text" id="account-name" required class="mt-1 block w-full rounded-md"></div><div id="edit-balance-wrapper" class="hidden"><label>Saldo Atual (Calculado)</label><div class="relative mt-1"><span class="absolute inset-y-0 left-0 flex items-center pl-3">R$</span><input type="number" id="current-balance" step="0.01" class="block w-full pl-10 rounded-md bg-slate-100" disabled></div></div><div id="initial-balance-wrapper"><label>Saldo Inicial</label><div class="relative mt-1"><span class="absolute inset-y-0 left-0 flex items-center pl-3">R$</span><input type="number" id="initial-balance" step="0.01" required class="block w-full pl-10 rounded-md" value="0"></div></div><div><label>Limite da Conta (Ex: Cheque Especial)</label><div class="relative mt-1"><span class="absolute inset-y-0 left-0 flex items-center pl-3">R$</span><input type="number" id="account-limit" step="0.01" required class="block w-full pl-10 rounded-md" value="0"></div></div><div><label>Valor para Empréstimo</label><div class="relative mt-1"><span class="absolute inset-y-0 left-0 flex items-center pl-3">R$</span><input type="number" id="account-loan-amount" step="0.01" required class="block w-full pl-10 rounded-md" value="0"></div></div><div class="flex justify-between items-center pt-2"><div id="edit-account-buttons" class="hidden space-x-2"><button type="button" id="deactivate-account-btn" class="bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm">Desativar</button><button type="button" id="delete-account-btn" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm">Excluir</button></div><button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-lg ml-auto">Salvar</button></div></form></div></div>
+    <div id="credit-card-modal" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden items-center justify-center"><div class="bg-white rounded-xl shadow-2xl w-full max-w-md m-4 p-8"><div class="flex justify-between items-center mb-6"><h2 id="cc-modal-title" class="text-2xl font-bold">Novo Cartão de Crédito</h2><button type="button" class="close-modal-btn text-2xl font-bold text-slate-400">&times;</button></div><form id="credit-card-form" class="space-y-4"><input type="hidden" id="edit-cc-id"><div><label>Nome do Cartão</label><input type="text" id="cc-name" placeholder="Ex: Nubank, Inter" required class="mt-1 block w-full rounded-md"></div><div><label>Limite do Cartão</label><div class="relative mt-1"><span class="absolute inset-y-0 left-0 pl-3 flex items-center">R$</span><input type="number" id="cc-limit" step="0.01" required placeholder="5000.00" class="block w-full pl-10 rounded-md"></div></div><div class="grid grid-cols-2 gap-4"><div><label>Dia do Fechamento</label><input type="number" id="cc-close-day" min="1" max="31" required placeholder="Ex: 20" class="mt-1 block w-full rounded-md"></div><div><label>Dia do Vencimento</label><input type="number" id="cc-due-day" min="1" max="31" required placeholder="Ex: 28" class="mt-1 block w-full rounded-md"></div></div><div class="flex justify-between items-center"><div id="edit-cc-buttons" class="hidden space-x-2"><button type="button" id="deactivate-cc-btn" class="bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm">Desativar</button><button type="button" id="delete-cc-btn" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm">Excluir</button></div><button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-lg">Salvar</button></div></form></div></div>
+    <div id="investment-asset-modal" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden items-center justify-center"><div class="bg-white rounded-xl shadow-2xl w-full max-w-md m-4 p-8"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold">Novo Ativo de Investimento</h2><button type="button" class="close-modal-btn text-2xl font-bold text-slate-400">&times;</button></div><form id="investment-asset-form" class="space-y-4"><div><label>Nome/Ticker do Ativo</label><input type="text" id="investment-asset-name" placeholder="Ex: Ações ITSA4, FII MXRF11" required class="mt-1 block w-full rounded-md"></div><div><label>Tipo de Ativo</label><input type="text" id="investment-asset-type" placeholder="Ex: Ação, FII, Renda Fixa" required class="mt-1 block w-full rounded-md"></div><div><label>Valor Inicial (opcional)</label><div class="relative mt-1"><span class="absolute inset-y-0 left-0 flex items-center pl-3">R$</span><input type="number" id="investment-initial-value" step="0.01" class="block w-full pl-10 rounded-md" value="0"></div></div><div class="flex justify-end"><button type="submit" class="bg-cyan-600 text-white px-6 py-2 rounded-lg">Salvar Ativo</button></div></form></div></div>
+    <div id="category-modal" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden items-center justify-center"><div class="bg-white rounded-xl shadow-2xl w-full max-w-md m-4 p-8"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold">Nova Categoria</h2><button type="button" class="close-modal-btn text-2xl font-bold text-slate-400">&times;</button></div><form id="category-form" class="space-y-4"><div><label>Nome da Categoria</label><input type="text" id="category-name" required class="mt-1 block w-full rounded-md"></div><div class="flex justify-end"><button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-lg">Salvar Categoria</button></div></form></div></div>
+    <div id="update-investment-modal" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden items-center justify-center"><div class="bg-white rounded-xl shadow-2xl w-full max-w-md m-4 p-8"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold">Atualizar Valor do Ativo</h2><button type="button" class="close-modal-btn text-2xl font-bold text-slate-400">&times;</button></div><form id="update-investment-form" class="space-y-4"><input type="hidden" id="update-investment-asset-id"><div><label>Valor Atual de Mercado</label><div class="relative mt-1"><span class="absolute inset-y-0 left-0 flex items-center pl-3">R$</span><input type="number" id="current-market-value" step="0.01" class="block w-full pl-10 rounded-md"></div></div><div><label>Tipo de Ativo</label><input type="text" id="update-investment-asset-type" placeholder="Ex: Ação, FII, Renda Fixa" required class="mt-1 block w-full rounded-md"></div><div><label>Data da Atualização</label><input type="date" id="update-investment-date" required class="mt-1 block w-full rounded-md"></div><div class="flex justify-end"><button type="submit" class="bg-cyan-600 text-white px-6 py-2 rounded-lg">Atualizar</button></div></form></div></div>
+    <div id="transaction-modal" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden items-center justify-center"><div class="bg-white rounded-xl shadow-2xl w-full max-w-lg m-4 p-8"><div class="flex justify-between items-center mb-6"><h2 id="transaction-modal-title" class="text-2xl font-bold">Nova Transação em Conta</h2><button type="button" class="close-modal-btn text-2xl font-bold text-slate-400">&times;</button></div><form id="transaction-form" class="space-y-6"><input type="hidden" id="edit-transaction-id"><div><label>Tipo</label><div class="grid grid-cols-3 gap-2"><label class="p-4 border rounded-lg cursor-pointer has-[:checked]:bg-green-50"><input type="radio" name="type" value="income" class="hidden" checked>Receita</label><label class="p-4 border rounded-lg cursor-pointer has-[:checked]:bg-red-50"><input type="radio" name="type" value="expense" class="hidden">Despesa</label><label class="p-4 border rounded-lg cursor-pointer has-[:checked]:bg-blue-50"><input type="radio" name="type" value="transfer" class="hidden">Transferência</label></div></div><div id="transaction-fields"><div><label>Descrição</label><input type="text" id="description" required class="mt-1 block w-full rounded-md"></div><div><label>Valor</label><div class="relative mt-1"><span class="absolute inset-y-0 left-0 flex items-center pl-3">R$</span><input type="number" id="amount" step="0.01" required class="block w-full pl-10 rounded-md"></div></div><div class="grid grid-cols-2 gap-4"><div id="source-account-wrapper"><label id="source-account-label">Conta</label><select id="account" name="accountId" required class="mt-1 block w-full rounded-md"></select></div><div id="destination-account-wrapper" class="hidden"><label>Conta de Destino</label><select id="destination-account" name="destinationAccountId" class="mt-1 block w-full rounded-md"></select></div></div><div class="grid grid-cols-2 gap-4"><div id="category-wrapper"><label>Categoria</label><select id="category" required class="mt-1 block w-full rounded-md"></select></div><div id="expense-type-wrapper" class="hidden"><label>Tipo de Despesa</label><select id="expense-type" class="mt-1 block w-full rounded-md"><option>Contas fixas</option><option>Parcelamentos</option><option>Investimentos</option><option>Outros gastos</option></select></div></div></div><div><label>Data</label><input type="date" id="date" required class="mt-1 block w-full rounded-md"></div><div class="flex justify-end"><button type="submit" id="save-transaction-btn" class="bg-indigo-600 text-white px-6 py-2 rounded-lg">Salvar</button></div></form></div></div>
+    <div id="cc-transaction-modal" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden items-center justify-center"><div class="bg-white rounded-xl shadow-2xl w-full max-w-lg m-4 p-8"><div class="flex justify-between items-center mb-6"><h2 id="cc-transaction-modal-title" class="text-2xl font-bold">Lançamento no Cartão</h2><button type="button" class="close-modal-btn text-2xl font-bold text-slate-400">&times;</button></div><form id="cc-transaction-form" class="space-y-4"><input type="hidden" id="edit-cc-transaction-id"><div><label>Tipo</label><div class="grid grid-cols-2 gap-4"><label class="p-4 border rounded-lg cursor-pointer has-[:checked]:bg-purple-50"><input type="radio" name="cc-type" value="expense" class="hidden" checked>Despesa</label><label class="p-4 border rounded-lg cursor-pointer has-[:checked]:bg-yellow-50"><input type="radio" name="cc-type" value="chargeback" class="hidden">Estorno</label></div></div><div><label>Descrição</label><input type="text" id="cc-description" required class="mt-1 block w-full rounded-md"></div><div><label>Valor</label><div class="relative mt-1"><span class="absolute inset-y-0 left-0 pl-3 flex items-center">R$</span><input type="number" id="cc-amount" step="0.01" required class="block w-full pl-10 rounded-md"></div></div><div class="grid grid-cols-2 gap-4"><div><label>Cartão</label><select id="cc-account" name="creditCardId" required class="mt-1 block w-full rounded-md"></select></div><div><label>Categoria</label><select id="cc-category" required class="mt-1 block w-full rounded-md"></select></div></div><div id="cc-expense-type-wrapper"><label>Tipo de Despesa</label><select id="cc-expense-type" class="mt-1 block w-full rounded-md"><option>Contas fixas</option><option>Parcelamentos</option><option>Investimentos</option><option>Outros gastos</option></select></div><div class="grid grid-cols-2 gap-4"><div><label>Parcelas</label><input type="number" id="cc-installments" min="1" value="1" required class="mt-1 block w-full rounded-md"></div><div><label>Data da Compra</label><input type="date" id="cc-date" required class="mt-1 block w-full rounded-md"></div><div class="flex flex-col"><label>Lançar na fatura</label><select id="cc-invoice-month" class="mt-1 block w-full rounded-md"></select><span id="invoice-info-text" class="text-xs text-slate-500 mt-1 block"></span></div></div><div class="flex justify-end"><button type="submit" id="save-cc-transaction-btn" class="bg-purple-600 text-white px-6 py-2 rounded-lg">Salvar</button></div></form></div></div>
+    <div id="investment-transaction-modal" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden items-center justify-center"><div class="bg-white rounded-xl shadow-2xl w-full max-w-lg m-4 p-8"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold">Aporte ou Resgate</h2><button type="button" class="close-modal-btn text-2xl font-bold text-slate-400">&times;</button></div><form id="investment-transaction-form" class="space-y-6"><div><label>Tipo</label><div class="grid grid-cols-2 gap-4"><label class="p-4 border rounded-lg cursor-pointer has-[:checked]:bg-cyan-50"><input type="radio" name="invest-type" value="aporte" class="hidden" checked>Aporte</label><label class="p-4 border rounded-lg cursor-pointer has-[:checked]:bg-orange-50"><input type="radio" name="invest-type" value="resgate" class="hidden">Resgate</label></div></div><div class="grid grid-cols-2 gap-4"><div><label>Ativo</label><select id="invest-asset" name="investmentAssetId" required class="mt-1 block w-full rounded-md"></select></div><div><label>Conta</label><select id="invest-account" name="accountId" required class="mt-1 block w-full rounded-md"></select></div></div><div><label>Valor</label><div class="relative mt-1"><span class="absolute inset-y-0 left-0 flex items-center pl-3">R$</span><input type="number" id="invest-amount" step="0.01" required class="block w-full pl-10 rounded-md"></div></div><div><label>Data</label><input type="date" id="invest-date" required class="mt-1 block w-full rounded-md"></div><div class="flex justify-end"><button type="submit" class="bg-cyan-600 text-white px-6 py-2 rounded-lg">Salvar Movimentação</button></div></form></div></div>
+    <div id="finalize-investment-modal" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden items-center justify-center"><div class="bg-white rounded-xl shadow-2xl w-full max-w-md m-4 p-8"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold">Finalizar Investimento</h2><button type="button" class="close-modal-btn text-2xl font-bold text-slate-400">&times;</button></div><form id="finalize-investment-form" class="space-y-4"><input type="hidden" id="finalize-investment-asset-id"><p class="text-slate-700">Você está finalizando o investimento em <span id="finalize-asset-name" class="font-semibold"></span> com valor de <span id="finalize-asset-value" class="font-semibold"></span>.</p><div><label for="finalize-destination-account">Transferir para qual conta?</label><select id="finalize-destination-account" required class="mt-1 block w-full rounded-md"></select></div><div class="flex justify-end"><button type="submit" class="bg-red-600 text-white px-6 py-2 rounded-lg">Confirmar Finalização</button></div></form></div></div>
+    <div id="pay-invoice-modal" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden items-center justify-center"><div class="bg-white rounded-xl shadow-2xl w-full max-w-md m-4 p-8"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold">Pagar Fatura</h2><button type="button" class="close-modal-btn text-2xl font-bold text-slate-400">&times;</button></div><form id="pay-invoice-form" class="space-y-4"><input type="hidden" id="pay-invoice-card-id"><input type="hidden" id="pay-invoice-month-year"><p>Você está pagando a fatura de <strong id="pay-invoice-details"></strong> no valor de <strong id="pay-invoice-amount"></strong>.</p><div><label for="pay-invoice-account">Pagar com a conta:</label><select id="pay-invoice-account" required class="mt-1 block w-full rounded-md"></select></div><div><label for="pay-invoice-date">Data do Pagamento:</label><input type="date" id="pay-invoice-date" required class="mt-1 block w-full rounded-md"></div><div class="flex justify-end"><button type="submit" class="bg-green-600 text-white px-6 py-2 rounded-lg">Confirmar Pagamento</button></div></form></div></div>
+    <div id="invoice-management-modal" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden items-center justify-center"><div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl m-4 p-8"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold"><span id="invoice-card-name"></span> - Faturas</h2><button type="button" class="close-modal-btn text-2xl font-bold text-slate-400">&times;</button></div><div id="invoices-list" class="space-y-4 max-h-96 overflow-y-auto pr-2"><p class="text-slate-500 text-center py-8">Nenhuma fatura encontrada.</p></div></div></div>
+    <div id="investment-details-modal" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden items-center justify-center"><div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl m-4 p-8"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold">Histórico do Ativo: <span id="details-asset-name"></span></h2><button type="button" class="close-modal-btn text-2xl font-bold text-slate-400">&times;</button></div><div id="investment-history-list" class="space-y-2 max-h-96 overflow-y-auto pr-2"></div></div></div>
+    <div id="immobilized-asset-modal" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden items-center justify-center"><div class="bg-white rounded-xl shadow-2xl w-full max-w-md m-4 p-8"><div class="flex justify-between items-center mb-6"><h2 id="immo-modal-title" class="text-2xl font-bold">Novo Ativo Imobilizado</h2><button type="button" class="close-modal-btn text-2xl font-bold text-slate-400">&times;</button></div><form id="immobilized-asset-form" class="space-y-4"><input type="hidden" id="edit-immo-id"><div><label>Nome do Ativo</label><input type="text" id="immo-asset-name" placeholder="Ex: Apartamento, Carro" required class="mt-1 block w-full rounded-md"></div><div><label>Descrição (opcional)</label><input type="text" id="immo-asset-description" placeholder="Ex: Placa, Endereço" class="mt-1 block w-full rounded-md"></div><div><label>Valor de Mercado</label><div class="relative mt-1"><span class="absolute inset-y-0 left-0 flex items-center pl-3">R$</span><input type="number" id="immo-asset-value" step="0.01" required class="block w-full pl-10 rounded-md" value="0"></div></div><div class="flex justify-between items-center pt-4"><div id="edit-immo-buttons" class="hidden"><button type="button" id="delete-immo-btn" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm">Excluir</button></div><button type="submit" class="bg-gray-600 text-white px-6 py-2 rounded-lg ml-auto">Salvar</button></div></form></div></div>
+    <div id="other-asset-modal" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden items-center justify-center"><div class="bg-white rounded-xl shadow-2xl w-full max-w-md m-4 p-8"><div class="flex justify-between items-center mb-6"><h2 id="other-modal-title" class="text-2xl font-bold">Novo Ativo (Outros)</h2><button type="button" class="close-modal-btn text-2xl font-bold text-slate-400">&times;</button></div><form id="other-asset-form" class="space-y-4"><input type="hidden" id="edit-other-id"><div><label>Nome do Ativo</label><input type="text" id="other-asset-name" placeholder="Ex: Obra de Arte, Joias" required class="mt-1 block w-full rounded-md"></div><div><label>Descrição (opcional)</label><input type="text" id="other-asset-description" class="mt-1 block w-full rounded-md"></div><div><label>Valor de Mercado</label><div class="relative mt-1"><span class="absolute inset-y-0 left-0 flex items-center pl-3">R$</span><input type="number" id="other-asset-value" step="0.01" required class="block w-full pl-10 rounded-md" value="0"></div></div><div class="flex justify-between items-center pt-4"><div id="edit-other-buttons" class="hidden"><button type="button" id="delete-other-btn" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm">Excluir</button></div><button type="submit" class="bg-pink-600 text-white px-6 py-2 rounded-lg ml-auto">Salvar</button></div></form></div></div>
+    <div id="message-box" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center"><div class="bg-white rounded-xl shadow-2xl w-full max-w-sm m-4 p-6 text-center"><p id="message-text" class="text-lg font-semibold text-slate-800 mb-4"></p><button id="message-box-ok-btn" class="bg-indigo-600 text-white px-6 py-2 rounded-lg">OK</button></div></div>
+    <div id="confirmation-box" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center"><div class="bg-white rounded-xl shadow-2xl w-full max-w-sm m-4 p-6 text-center"><p id="confirmation-text" class="text-lg font-semibold text-slate-800 mb-4"></p><div class="flex justify-center space-x-4"><button id="confirmation-cancel-btn" class="bg-slate-200 text-slate-800 px-5 py-2 rounded-lg font-semibold hover:bg-slate-300 transition-all duration-200">Cancelar</button><button id="confirmation-confirm-btn" class="bg-red-600 text-white px-5 py-2 rounded-lg font-semibold shadow-sm hover:bg-red-700 transition-all duration-200 transform hover:-translate-y-px">Confirmar</button></div></div></div>
+    
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, doc, deleteDoc, updateDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // =================================================================================
+        // ATENÇÃO: Substitua o objeto de configuração abaixo pelo do seu próprio projeto Firebase.
+        // Você pode encontrar essas informações no console do Firebase, nas configurações do seu projeto.
+        // =================================================================================
+        const firebaseConfig = {
+            apiKey: "SUA_API_KEY",
+            authDomain: "SEU_AUTH_DOMAIN",
+            projectId: "SEU_PROJECT_ID",
+            storageBucket: "SEU_STORAGE_BUCKET",
+            messagingSenderId: "SEU_MESSAGING_SENDER_ID",
+            appId: "SEU_APP_ID"
+        };
+        
+        // Use a configuração global se disponível (para ambientes de teste), senão, use a configuração local.
+        const firebaseConfigObj = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : firebaseConfig;
+        const app = initializeApp(firebaseConfigObj);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        
+        // Initialize Firebase services
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- App State Variables ---
+        let userId = null;
+        let localAccounts = [], localCreditCards = [], localInvestmentAssets = [], localImmobilizedAssets = [], localOtherAssets = [], localCategories = [], localTransactions = [];
+        let unsubscribes = [];
+        let charts = {};
+        let selectedCreditCardForInvoices = null;
+
+        // --- Utility Functions ---
+        const $ = (selector) => document.querySelector(selector);
+        const $$ = (selector) => document.querySelectorAll(selector);
+        const formatCurrency = (value) => (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const toggleModal = (modal, show) => { if (!modal) return; modal.classList.toggle('hidden', !show); modal.classList.toggle('flex', show); };
+        function showMessage(message) { $('#message-text').textContent = message; toggleModal($('#message-box'), true); $('#message-box-ok-btn').onclick = () => toggleModal($('#message-box'), false); }
+        function showConfirmation(message, onConfirm) { $('#confirmation-text').textContent = message; toggleModal($('#confirmation-box'), true); $('#confirmation-confirm-btn').onclick = () => { toggleModal($('#confirmation-box'), false); onConfirm(); }; $('#confirmation-cancel-btn').onclick = () => { toggleModal($('#confirmation-box'), false); }; }
+
+        // --- Authentication ---
+        onAuthStateChanged(auth, user => {
+            if (user && user.isAnonymous) {
+                userId = user.uid;
+                $('#user-id-display').textContent = `ID: ...${userId.slice(-6)}`;
+                $('#loading-view').classList.add('hidden');
+                $('#app-container').classList.remove('hidden');
+                $('#main-controls').classList.remove('hidden');
+                populateFilters();
+                listenToData();
+            } else {
+                // Se não for anônimo (ou deslogado), tenta logar anonimamente
+                signInAnonymously(auth).catch(error => {
+                    console.error("Anonymous sign-in failed:", error);
+                    $('#loading-view').innerHTML = `<p class="text-red-500">Falha na autenticação. Verifique as credenciais do Firebase.</p>`;
+                });
+            }
+        });
+
+        const resetAndSignOut = async () => {
+             showConfirmation("Isso irá limpar todos os dados da sessão atual e iniciar uma nova. Deseja continuar?", async () => {
+                try {
+                    await signOut(auth);
+                    // A lógica onAuthStateChanged irá lidar com o novo login anônimo
+                    window.location.reload();
+                } catch (error) {
+                    console.error("Sign out failed:", error);
+                    showMessage("Falha ao resetar. Tente novamente.");
+                }
+            });
+        };
+
+        // --- Firestore Listeners ---
+        function listenToData() {
+            if (!userId) return;
+            unsubscribes.forEach(unsub => unsub());
+            unsubscribes = [];
+            const listen = (coll, setter, onEmptyCallback = null) => {
+                const q = query(collection(db, `artifacts/${appId}/users/${userId}/${coll}`));
+                const unsub = onSnapshot(q, snapshot => {
+                    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setter(data);
+                    if (snapshot.empty && onEmptyCallback) onEmptyCallback();
+                    processData();
+                }, (error) => console.error(`Error listening to ${coll}:`, error));
+                unsubscribes.push(unsub);
+            };
+            listen('accounts', data => localAccounts = data);
+            listen('creditCards', data => localCreditCards = data);
+            listen('investmentAssets', data => localInvestmentAssets = data);
+            listen('immobilizedAssets', data => localImmobilizedAssets = data);
+            listen('otherAssets', data => localOtherAssets = data);
+            listen('transactions', data => localTransactions = data);
+            listen('categories', data => localCategories = data, createDefaultCategories);
+        }
+        async function createDefaultCategories() { if (!userId || localCategories.length > 0) return; const batch = writeBatch(db); const categories = ["Moradia", "Alimentação", "Transporte", "Lazer", "Saúde", "Salário", "Investimentos", "Outros", "Transferência", "Fatura Cartão", "Ajuste", "Rendimento de Investimento", "Perda em Investimento"]; categories.forEach(name => { const ref = doc(collection(db, `artifacts/${appId}/users/${userId}/categories`)); batch.set(ref, { name }); }); try { await batch.commit(); } catch (e) { console.error("Error creating default categories:", e); showMessage("Erro ao criar categorias padrão."); } }
+
+        // --- Filtering & Date Logic ---
+        const getInvoiceDate = (transactionDateString, closeDay) => { const txDate = new Date(transactionDateString + 'T12:00:00'); const txDay = txDate.getUTCDate(); let invoiceYear = txDate.getUTCFullYear(); let invoiceMonth = txDate.getUTCMonth(); if (txDay > closeDay) { invoiceMonth += 1; if (invoiceMonth > 11) { invoiceMonth = 0; invoiceYear += 1; } } return { month: invoiceMonth, year: invoiceYear }; }
+        function populateFilters() { const now = new Date(); const currentMonth = now.getMonth(); const currentYear = now.getFullYear(); const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]; const yearSelectors = $$('#year-filter, #dashboard-year-filter-pie, #dashboard-year-filter-lines, #dashboard-year-filter-returns-type, #dashboard-year-filter-returns-asset, #dashboard-year-filter-expense-cat, #dashboard-year-filter-income-cat, #dashboard-year-filter-returns-percent, #dashboard-year-filter-expense-type, #dashboard-table-year-filter, #projected-balance-year-filter'); $$('#month-filter, #dashboard-month-filter, #dashboard-month-filter-expense-type, #dashboard-table-month-filter, #projected-balance-month-filter').forEach(mf => { mf.innerHTML = '<option value="all">Todos os Meses</option>'; months.forEach((m, i) => mf.innerHTML += `<option value="${i}">${m}</option>`); mf.value = currentMonth; }); yearSelectors.forEach(yf => { yf.innerHTML = ''; for (let y = currentYear + 5; y >= 2018; y--) { yf.innerHTML += `<option value="${y}">${y}</option>`; } yf.value = currentYear; }); }
+        
+        // --- Data Processing & UI Updates ---
+        function processData() {
+            if(!userId) return;
+            updateDropdowns();
+            const selectedYear = $('#year-filter').value;
+            const selectedMonth = $('#month-filter').value;
+            const filteredTransactions = localTransactions.filter(t => {
+                let transactionDate;
+                if (t.sourceType === 'creditCard') { const card = localCreditCards.find(c => c.id === t.sourceId); if (!card) return false; const invoicePeriod = getInvoiceDate(t.date, card.closeDay); transactionDate = new Date(invoicePeriod.year, invoicePeriod.month); }                 
+                else { transactionDate = new Date(t.date + 'T12:00:00'); }
+                const yearMatch = selectedYear === 'all' || transactionDate.getFullYear() == selectedYear;
+                const monthMatch = selectedMonth === 'all' || transactionDate.getMonth() == selectedMonth;
+                return yearMatch && monthMatch;
+            });
+            updateSummaryCards(filteredTransactions);
+            updateEntityLists();
+            updateTransactionsList(filteredTransactions);
+            if (!$('#view-dashboard').classList.contains('hidden')) { updateDashboard(); }
+        }
+
+        function updateSummaryCards(filteredTransactions) {
+            const reconciledTx = localTransactions.filter(t => t.reconciled !== false);
+            const nonOperationalCategories = ['Transferência', 'Investimentos', 'Investimento - Aporte', 'Investimento - Resgate', 'Fatura Cartão', 'Ajuste', 'Rendimento de Investimento', 'Perda em Investimento'];
+
+            // Monthly Income/Expense
+            const totalIncome = filteredTransactions.filter(t => t.type === 'income' && !nonOperationalCategories.includes(t.category)).reduce((s, t) => s + t.amount, 0);
+            const totalExpenses = filteredTransactions.filter(t => t.type === 'expense' && !nonOperationalCategories.includes(t.category)).reduce((s, t) => s + t.amount, 0);
+            $('#total-income').textContent = formatCurrency(totalIncome);
+            $('#total-expenses').textContent = formatCurrency(totalExpenses);
+            const monthBalance = totalIncome - totalExpenses;
+            const monthBalanceEl = $('#month-balance');
+            monthBalanceEl.textContent = formatCurrency(monthBalance);
+            monthBalanceEl.className = 'dashboard-card-value';
+            monthBalanceEl.classList.add(monthBalance >= 0 ? 'text-green-600' : 'text-red-600');
+
+            // Credit Card Bill
+            const ccExpenses = filteredTransactions.filter(t => t.sourceType === 'creditCard' && t.type === 'expense' && !t.paymentId).reduce((s, t) => s + t.amount, 0);
+            const ccChargebacks = filteredTransactions.filter(t => t.type === 'chargeback' && !t.paymentId).reduce((s, t) => s + t.amount, 0);
+            $('#credit-card-bill').textContent = formatCurrency(ccExpenses - ccChargebacks);
+
+            // Raw values for Grand Total
+            const rawBalance = localAccounts.reduce((s, t) => s + (t.initialBalance || 0), 0) + reconciledTx.filter(t => t.sourceType === 'account' && t.type === 'income').reduce((s, t) => s + t.amount, 0) - reconciledTx.filter(t => t.sourceType === 'account' && t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+            const rawAvailableLimit = localAccounts.filter(a => a.active !== false).reduce((total, acc) => total + (acc.limit || 0) + (acc.loanAmount || 0), 0) + localCreditCards.filter(c => c.active !== false).reduce((total, card) => { const unpaidTxs = localTransactions.filter(t => t.sourceId === card.id && !t.paymentId); const outstandingBalance = unpaidTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0) - unpaidTxs.filter(t => t.type === 'chargeback').reduce((s, t) => s + t.amount, 0); return total + (card.limit - outstandingBalance); }, 0);
+            const rawTotalInvested = localInvestmentAssets.reduce((total, asset) => total + (asset.currentValue || 0), 0);
+            const totalImmobilized = localImmobilizedAssets.reduce((total, asset) => total + (asset.value || 0), 0);
+            const totalOthers = localOtherAssets.reduce((total, asset) => total + (asset.value || 0), 0);
+
+            // Update individual cards
+            $('#balance').textContent = formatCurrency(rawBalance);
+            $('#available-limit').textContent = formatCurrency(rawAvailableLimit);
+            $('#total-invested').textContent = formatCurrency(rawTotalInvested);
+            $('#total-immobilized').textContent = formatCurrency(totalImmobilized);
+            $('#total-others').textContent = formatCurrency(totalOthers);
+
+            // Update Grand Total
+            const grandTotal = rawBalance + rawAvailableLimit + rawTotalInvested + totalImmobilized + totalOthers;
+            $('#grand-total').textContent = formatCurrency(grandTotal);
+        }
+
+        function updateEntityLists() {
+            const accList = $('#accounts-list');
+            accList.innerHTML = '';
+            const activeAccounts = localAccounts.filter(a => a.active !== false);
+            if (activeAccounts.length === 0) {
+                accList.innerHTML = '<p class="text-slate-500 col-span-full">Nenhuma conta criada.</p>';
+            } else {
+                activeAccounts.forEach(acc => {
+                    const reconciledTx = localTransactions.filter(t => t.reconciled !== false && t.sourceId === acc.id);
+                    const income = reconciledTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+                    const expense = reconciledTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+                    const balance = (acc.initialBalance || 0) + income - expense;
+
+                    let loanHtml = '';
+                    if (acc.loanAmount && acc.loanAmount > 0) {
+                        loanHtml = `<p class="text-xs text-slate-500 mt-1">Empréstimo: ${formatCurrency(acc.loanAmount)}</p>`;
+                    }
+
+                    accList.innerHTML += `
+                    <div class="bg-white p-3 rounded-xl shadow-sm border flex flex-col justify-between">
+                        <div>
+                            <p class="font-semibold text-sm">${acc.name}</p>
+                            <p class="text-xs text-slate-500">Saldo</p>
+                            <p class="font-semibold text-lg ${balance < 0 ? 'text-red-500' : ''}">${formatCurrency(balance)}</p>
+                            ${loanHtml}
+                        </div>
+                        <button data-id="${acc.id}" class="edit-account-btn text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold px-3 py-1 rounded-md mt-2 self-start transition-colors">Editar</button>
+                    </div>`;
+                });
+            }
+
+            const ccList = $('#credit-cards-list');
+             ccList.innerHTML = '';
+             const activeCreditCards = localCreditCards.filter(c => c.active !== false);
+             if (activeCreditCards.length === 0) {
+                 ccList.innerHTML = '<p class="text-slate-500 col-span-full">Nenhum cartão criado.</p>';
+             } else {
+                 activeCreditCards.forEach(card => {
+                     const unpaidTxs = localTransactions.filter(t => t.sourceId === card.id && !t.paymentId);
+                     const outstandingBalance = unpaidTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0) - unpaidTxs.filter(t => t.type === 'chargeback').reduce((s, t) => s + t.amount, 0);
+                     const availableLimit = card.limit - outstandingBalance;
+                     const now = new Date();
+                     const currentInvoicePeriod = getInvoiceDate(now.toISOString().split('T')[0], card.closeDay);
+                     const currentInvoiceTxs = localTransactions.filter(t => {
+                         if (t.sourceId !== card.id) return false;
+                         const invoicePeriod = getInvoiceDate(t.date, card.closeDay);
+                         return invoicePeriod.year === currentInvoicePeriod.year && invoicePeriod.month === currentInvoicePeriod.month;
+                     });
+                     const currentInvoiceTotal = currentInvoiceTxs.reduce((sum, tx) => sum + (tx.type === 'expense' ? tx.amount : -tx.amount), 0);
+
+                     const currentInvoiceMonthStr = String(currentInvoicePeriod.month + 1).padStart(2, '0');
+                     const currentInvoiceKey = `${card.id}-${currentInvoicePeriod.year}-${currentInvoiceMonthStr}`;
+                     const currentInvoicePaid = localTransactions.some(p => p.creditCardPaymentForInvoice === currentInvoiceKey);
+
+                     const invoicePeriodLabel = new Date(currentInvoicePeriod.year, currentInvoicePeriod.month).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+                     ccList.innerHTML += `
+                    <div class="bg-white p-3 rounded-xl shadow-sm border flex flex-col justify-between">
+                        <p class="font-semibold text-sm">${card.name}</p>
+                        <div class="flex justify-between items-baseline mt-1">
+                            <p class="text-xs text-slate-500">Limite Disp.</p>
+                            <p class="font-semibold text-lg text-blue-600">${formatCurrency(availableLimit)}</p>
+                        </div>
+                        <div class="mt-1 text-xs">
+                            <p class="text-slate-600">Fatura ${invoicePeriodLabel}: <span class="font-semibold ${currentInvoiceTotal > 0 && !currentInvoicePaid ? 'text-red-600' : 'text-green-600'}">${formatCurrency(currentInvoicePaid ? 0 : currentInvoiceTotal)}</span></p>
+                            <p class="text-xs text-slate-500">${currentInvoicePaid ? 'Paga' : (currentInvoiceTotal > 0 ? 'Em Aberto' : 'Sem despesas')}</p>
+                        </div>
+                        <div class="flex justify-between space-x-2 mt-2">
+                            <button data-id="${card.id}" class="edit-cc-btn text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded self-start">Editar</button>
+                            <button data-card-id="${card.id}" class="view-invoices-btn text-xs bg-purple-100 hover:bg-purple-200 text-purple-700 px-2 py-1 rounded self-start">Ver Faturas</button>
+                        </div>
+                    </div>`;
+                 });
+             }
+
+            const investList = $('#investments-list');
+            investList.innerHTML = '';
+            const activeInvestments = localInvestmentAssets.filter(a => a.active !== false);
+            if (activeInvestments.length === 0) {
+                investList.innerHTML = '<p class="text-slate-500 col-span-full">Nenhum ativo criado.</p>';
+            } else {
+                activeInvestments.forEach(asset => {
+                    const assetTxs = localTransactions.filter(t => t.investmentAssetId === asset.id);
+                    const aportes = assetTxs.filter(t => t.category === 'Investimento - Aporte').reduce((s, t) => s + t.amount, 0);
+                    const resgates = assetTxs.filter(t => t.category === 'Investimento - Resgate').reduce((s, t) => s + t.amount, 0);
+                    const custoTotal = aportes - resgates;
+                    const currentValue = asset.currentValue || 0;
+                    const valorRendimentoTotal = currentValue - custoTotal;
+                    const percentualRendimentoTotal = custoTotal > 0 ? (valorRendimentoTotal / custoTotal) * 100 : (currentValue > 0 ? 100 : 0);
+
+                    investList.innerHTML += `
+                    <div class="bg-white p-3 rounded-xl shadow-sm border flex flex-col justify-between">
+                        <div>
+                            <p class="font-semibold text-sm">${asset.name}<span class="block text-xs text-slate-500 font-normal">${asset.type}</span></p>
+                            <div class="mt-2 space-y-1 text-xs">
+                                <p class="text-cyan-800 font-semibold">Saldo Atual: ${formatCurrency(currentValue)}</p>
+                                <p class="text-slate-500">Custo (Aportes - Resgates): ${formatCurrency(custoTotal)}</p>
+                                <p class="font-semibold ${valorRendimentoTotal >= 0 ? 'text-green-600' : 'text-red-600'}">Rend. Total: ${formatCurrency(valorRendimentoTotal)} (${percentualRendimentoTotal.toFixed(2)}%)</p>
+                            </div>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-1 justify-end">
+                            <button class="partial-redemption-btn text-xs bg-orange-100 hover:bg-orange-200 text-orange-700 px-2 py-1 rounded-md font-semibold transition-colors" data-asset-id="${asset.id}">Resgate Parcial</button>
+                            <button class="edit-contributions-btn text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded-md font-semibold transition-colors" data-asset-id="${asset.id}">Histórico</button>
+                            <button class="update-investment-btn text-xs bg-cyan-100 hover:bg-cyan-200 text-cyan-700 px-2 py-1 rounded-md font-semibold transition-colors" data-asset-id="${asset.id}">Atualizar</button>
+                            <button class="finalize-investment-btn text-xs bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded-md font-semibold transition-colors" data-asset-id="${asset.id}" data-asset-name="${asset.name}" data-current-value="${currentValue}" ${currentValue <= 0 ? 'disabled' : ''}>Resgate Total</button>
+                        </div>
+                    </div>`;
+                });
+            }
+
+            const immoList = $('#immobilized-assets-list');
+            immoList.innerHTML = '';
+            const activeImmobilizedAssets = localImmobilizedAssets.filter(a => a.active !== false);
+            if (activeImmobilizedAssets.length === 0) {
+                immoList.innerHTML = '<p class="text-slate-500 col-span-full">Nenhum ativo imobilizado criado.</p>';
+            } else {
+                activeImmobilizedAssets.forEach(asset => {
+                    immoList.innerHTML += `
+                    <div class="bg-white p-3 rounded-xl shadow-sm border flex flex-col justify-between">
+                        <div>
+                            <p class="font-semibold text-sm">${asset.name}</p>
+                            <p class="text-xs text-slate-500">${asset.description || '&nbsp;'}</p>
+                            <p class="font-semibold text-lg text-gray-700 mt-2">${formatCurrency(asset.value)}</p>
+                        </div>
+                        <button class="edit-immo-asset-btn text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold px-3 py-1 rounded-md mt-2 self-start transition-colors" data-id="${asset.id}">Editar</button>
+                    </div>`;
+                });
+            }
+
+            const otherList = $('#other-assets-list');
+            otherList.innerHTML = '';
+            const activeOtherAssets = localOtherAssets.filter(a => a.active !== false);
+            if (activeOtherAssets.length === 0) {
+                otherList.innerHTML = '<p class="text-slate-500 col-span-full">Nenhum outro ativo criado.</p>';
+            } else {
+                activeOtherAssets.forEach(asset => {
+                    otherList.innerHTML += `
+                    <div class="bg-white p-3 rounded-xl shadow-sm border flex flex-col justify-between">
+                        <div>
+                            <p class="font-semibold text-sm">${asset.name}</p>
+                            <p class="text-xs text-slate-500">${asset.description || '&nbsp;'}</p>
+                            <p class="font-semibold text-lg text-pink-700 mt-2">${formatCurrency(asset.value)}</p>
+                        </div>
+                        <button class="edit-other-asset-btn text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold px-3 py-1 rounded-md mt-2 self-start transition-colors" data-id="${asset.id}">Editar</button>
+                    </div>`;
+                });
+            }
+        }
+
+        function updateTransactionsList(transactions) {
+            const listEl = $('#transactions-list'); listEl.innerHTML = ''; if (transactions.length === 0) { listEl.innerHTML = '<p class="text-slate-500 p-4 text-center">Nenhuma transação no período.</p>'; return; }
+            const accountTransactions = []; const groupedInvoices = {};
+            transactions.forEach(t => { if (t.sourceType === 'creditCard') { const card = localCreditCards.find(c => c.id === t.sourceId); if (card) { const invoicePeriod = getInvoiceDate(t.date, card.closeDay); const periodKey = `${card.id}-${invoicePeriod.year}-${String(invoicePeriod.month + 1).padStart(2, '0')}`; const invoiceMonthYearText = new Date(invoicePeriod.year, invoicePeriod.month).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }); if (!groupedInvoices[periodKey]) { groupedInvoices[periodKey] = { cardId: card.id, cardName: card.name, invoiceLabel: invoiceMonthYearText, totalExpenses: 0, totalChargebacks: 0, transactions: [] }; } groupedInvoices[periodKey].transactions.push(t); if (t.type === 'expense') groupedInvoices[periodKey].totalExpenses += t.amount; else if (t.type === 'chargeback') groupedInvoices[periodKey].totalChargebacks += t.amount; } } else if (t.sourceType === 'account') { accountTransactions.push(t); } });
+            accountTransactions.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(t => { const isIncome = t.type === 'income'; let colorClass = isIncome ? 'green' : 'red'; if (t.category === 'Transferência') colorClass = 'blue'; const sign = isIncome ? '+' : '-'; listEl.innerHTML += `<div class="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border"><div class="flex items-center space-x-3 flex-grow"><input type="checkbox" class="reconcile-checkbox" data-id="${t.id}" ${t.reconciled !== false ? 'checked' : ''}><div class="flex-grow"><p class="font-medium text-sm">${t.description}</p><p class="text-xs text-slate-500">${new Date(t.date).toLocaleDateString('pt-BR',{timeZone:'UTC'})}</p></div></div><div class="text-right flex items-center space-x-2"><p class="font-semibold text-sm w-28 text-right text-${colorClass}-600">${sign} ${formatCurrency(t.amount)}</p><button class="edit-transaction-btn p-1.5 rounded-full text-slate-400 hover:bg-slate-100 hover:text-indigo-600 transition-colors" data-id="${t.id}" title="Editar Transação"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-edit-3"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></button><button class="delete-btn p-1.5 rounded-full text-slate-400 hover:bg-slate-100 hover:text-red-600 transition-colors" data-id="${t.id}" title="Excluir Transação"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button></div></div>`; });
+            const sortedInvoicePeriods = Object.keys(groupedInvoices).sort().reverse();
+            sortedInvoicePeriods.forEach(periodKey => {
+                 const invoice = groupedInvoices[periodKey];
+                 const [cardId, year, month] = periodKey.split('-');
+                 const isPaid = localTransactions.some(p => p.creditCardPaymentForInvoice === periodKey);
+                 const totalDue = invoice.totalExpenses - invoice.totalChargebacks;
+                 const displayTotal = isPaid ? 0 : totalDue;
+                 const invoiceStatusClass = isPaid ? 'text-green-600' : (totalDue > 0 ? 'text-red-600' : 'text-slate-500');
+                 const invoiceStatusText = isPaid ? 'Paga' : (totalDue > 0 ? 'Em Aberto' : 'Sem despesas');
+                 let invoiceHtml = `<details class="bg-white p-3 rounded-xl shadow-sm border group"><summary class="flex justify-between items-center font-semibold text-slate-700 text-sm"><div class="flex-grow">Fatura ${invoice.cardName} - ${invoice.invoiceLabel}<span class="block text-xs text-slate-500 font-normal">Total: <span class="font-semibold">${formatCurrency(displayTotal)}</span> | Status: <span class="${invoiceStatusClass}">${invoiceStatusText}</span></span></div><button class="pay-fatura-btn bg-green-600 text-white px-3 py-1 rounded-md text-xs disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md transform hover:-translate-y-px transition-all duration-200" data-card-id="${invoice.cardId}" data-invoice-period="${periodKey}" data-total="${totalDue}" data-card-name="${invoice.cardName}" data-invoice-label="${invoice.invoiceLabel}" ${isPaid || totalDue <= 0 ? 'disabled' : ''}>Pagar Fatura</button></summary><div class="mt-3 border-t border-slate-200 pt-3 space-y-2"><p class="text-xs text-slate-600 font-semibold mb-2">Despesas desta fatura:</p>`;
+                invoice.transactions
+                    .sort((a, b) => new Date(a.originalPurchaseDate || a.date) - new Date(b.originalPurchaseDate || b.date))
+                    .forEach(t => {
+                         const isExpense = t.type === 'expense';
+                         const colorClass = isExpense ? 'red' : 'yellow';
+                         const sign = isExpense ? '-' : '+';
+                         invoiceHtml += `<div class="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-200 text-xs"><div class="flex items-center space-x-2 flex-grow"><input type="checkbox" class="reconcile-checkbox" data-id="${t.id}" ${t.reconciled !== false ? 'checked' : ''}><div class="flex-grow"><p class="font-medium">${t.description}</p><p class="text-xs text-slate-500">${new Date(t.originalPurchaseDate || t.date).toLocaleDateString('pt-BR',{timeZone:'UTC'})} - ${t.category}</p></div></div><div class="text-right flex items-center space-x-2"><p class="font-semibold w-24 text-right text-${colorClass}-600">${sign} ${formatCurrency(t.amount)}</p><button class="edit-cc-expense-btn p-1.5 rounded-full text-slate-400 hover:bg-slate-100 hover:text-indigo-600 transition-colors" data-id="${t.id}" title="Editar Transação"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></button><button class="delete-btn p-1.5 rounded-full text-slate-400 hover:bg-slate-100 hover:text-red-600 transition-colors" data-id="${t.id}" title="Excluir Transação"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button></div></div>`;
+                     });
+                 invoiceHtml += `</div></details>`;
+                 listEl.innerHTML += invoiceHtml;
+             });
+        }
+
+        function updateDropdowns() { const accSelects = $$('#account, #invest-account, #destination-account, #finalize-destination-account, #pay-invoice-account'); const activeAccounts = localAccounts.filter(a => a.active !== false); accSelects.forEach(sel => { const currentVal = sel.value; sel.innerHTML = activeAccounts.length === 0 ? '<option value="">Crie uma conta</option>' : activeAccounts.map(a => `<option value="${a.id}">${a.name}</option>`).join(''); sel.value = currentVal || (activeAccounts.length > 0 ? activeAccounts[0].id : ''); }); const ccSelect = $('#cc-account'); const activeCCs = localCreditCards.filter(c => c.active !== false); ccSelect.innerHTML = activeCCs.length === 0 ? '<option value="">Crie um cartão</option>' : activeCCs.map(c => `<option value="${c.id}">${c.name}</option>`).join(''); const investAssetSelects = $$('#invest-asset, #dashboard-invest-type-filter-returns-percent'); const activeInvestments = localInvestmentAssets.filter(a => a.active !== false); const allInvestTypes = [...new Set(activeInvestments.map(a => a.type))]; investAssetSelects.forEach(sel => { sel.innerHTML = activeInvestments.length === 0 ? '<option value="">Crie um ativo</option>' : activeInvestments.map(a => `<option value="${a.id}">${a.name}</option>`).join(''); }); $$('#dashboard-invest-type-filter-composition, #dashboard-invest-type-filter-returns-asset, #dashboard-invest-type-filter-returns-percent').forEach(sel => { const currentVal = sel.value; sel.innerHTML = `<option value="all">Todos os Tipos</option>` + allInvestTypes.map(t => `<option value="${t}">${t}</option>`).join(''); sel.value = currentVal || 'all'; }); const categorySelects = $$('#category, #cc-category'); const incomeCategorySelect = $('#dashboard-income-cat-filter'); const expenseCategorySelect = $('#dashboard-expense-cat-filter'); const protectedCategories = ['Rendimento de Investimento', 'Perda em Investimento', 'Ajuste', 'Fatura Cartão', 'Transferência']; const allIncomeCategories = [...new Set(localTransactions.filter(t => t.type === 'income').map(t => t.category))]; const allExpenseCategories = [...new Set(localTransactions.filter(t => t.type === 'expense').map(t => t.category))]; incomeCategorySelect.innerHTML = allIncomeCategories.map(c => `<option value="${c}">${c}</option>`).join(''); expenseCategorySelect.innerHTML = allExpenseCategories.map(c => `<option value="${c}">${c}</option>`).join(''); categorySelects.forEach(sel => { const filteredCategories = localCategories.filter(c => !protectedCategories.includes(c.name)); sel.innerHTML = filteredCategories.length === 0 ? '<option value="">Crie uma categoria</option>' : filteredCategories.sort((a,b) => a.name.localeCompare(b.name)).map(c => `<option value="${c.name}">${c.name}</option>`).join(''); }); }
+        
+        function updateDashboard(){
+            updateDetailsTable();
+            updateProjectedBalanceTable();
+            const pieYear = $('#dashboard-year-filter-pie').value; const pieMonth = $('#dashboard-month-filter').value; const linesYear = $('#dashboard-year-filter-lines').value; const returnsTypeYear = $('#dashboard-year-filter-returns-type').value; const compositionInvestType = $('#dashboard-invest-type-filter-composition').value; const returnsAssetYear = $('#dashboard-year-filter-returns-asset').value; const returnsAssetType = $('#dashboard-invest-type-filter-returns-asset').value; const expenseCatYear = $('#dashboard-year-filter-expense-cat').value; const expenseCat = $('#dashboard-expense-cat-filter').value; const incomeCatYear = $('#dashboard-year-filter-income-cat').value; const incomeCat = $('#dashboard-income-cat-filter').value; const returnsPercentYear = $('#dashboard-year-filter-returns-percent').value; const returnsPercentType = $('#dashboard-invest-type-filter-returns-percent').value; const expenseTypeChartYear = $('#dashboard-year-filter-expense-type').value; const expenseTypeChartMonth = $('#dashboard-month-filter-expense-type').value;
+            const pieTxs = localTransactions.filter(t => { let transactionDate; if (t.sourceType === 'creditCard') { const card = localCreditCards.find(c => c.id === t.sourceId); if (!card) return false; const invoicePeriod = getInvoiceDate(t.date, card.closeDay); transactionDate = new Date(invoicePeriod.year, invoicePeriod.month); } else { transactionDate = new Date(t.date + 'T12:00:00'); } return (pieYear === 'all' || transactionDate.getFullYear() == pieYear) && (pieMonth === 'all' || transactionDate.getMonth() == pieMonth); });
+            const lineBarTxs = localTransactions.filter(t => { let transactionDate; if (t.sourceType === 'creditCard') { const card = localCreditCards.find(c => c.id === t.sourceId); if (!card) return false; const invoicePeriod = getInvoiceDate(t.date, card.closeDay); transactionDate = new Date(invoicePeriod.year, invoicePeriod.month); } else { transactionDate = new Date(t.date + 'T12:00:00'); } return linesYear === 'all' || transactionDate.getFullYear() == linesYear; });
+            renderPieChart('income-pie-chart', pieTxs, 'income', 'Receitas'); renderPieChart('expense-pie-chart', pieTxs, 'expense', 'Despesas'); renderMonthlyLineChart(lineBarTxs); renderMonthlyBarChart(lineBarTxs); renderCategoryEvolutionChart('expense-category-line-chart', 'expense', expenseCatYear, expenseCat); renderCategoryEvolutionChart('income-category-line-chart', 'income', incomeCatYear, incomeCat);
+            const expenseTypeTxs = localTransactions.filter(t => { const txDate = new Date(t.date + 'T12:00:00'); const yearMatch = expenseTypeChartYear === 'all' || txDate.getFullYear() == expenseTypeChartYear; const monthMatch = expenseTypeChartMonth === 'all' || txDate.getMonth() == expenseTypeChartMonth; return yearMatch && monthMatch; });
+            renderExpenseTypeChart(expenseTypeTxs);
+            let filteredCompositionAssets = compositionInvestType === 'all' ? localInvestmentAssets : localInvestmentAssets.filter(a => a.type === compositionInvestType);
+            renderInvestmentPie('invest-type-pie-chart', localInvestmentAssets.filter(a => a.active !== false), 'type', 'Por Tipo'); renderInvestmentPie('invest-asset-pie-chart', filteredCompositionAssets.filter(a => a.active !== false), 'name', 'Por Ativo'); renderMonthlyInvestmentReturnChart(returnsPercentYear, returnsPercentType);
+            const returnsByTypeTxs = localTransactions.filter(t => returnsTypeYear === 'all' || new Date(t.date + 'T12:00:00').getUTCFullYear() == returnsTypeYear);
+            renderInvestmentReturnsByTypeChart(returnsByTypeTxs);
+            const returnsByAssetTxs = localTransactions.filter(t => returnsAssetYear === 'all' || new Date(t.date + 'T12:00:00').getUTCFullYear() == returnsAssetYear);
+            renderInvestmentReturnsByAssetChart(returnsByAssetTxs, returnsAssetType);
+        }
+
+        function updateDetailsTable() {
+            const month = $('#dashboard-table-month-filter').value; const year = $('#dashboard-table-year-filter').value;
+            const incomeTableBody = $('#income-details-table'); const expenseTableBody = $('#expense-details-table');
+            incomeTableBody.innerHTML = ''; expenseTableBody.innerHTML = '';
+            const nonOpCats = ['Transferência', 'Investimentos', 'Investimento - Aporte', 'Investimento - Resgate', 'Rendimento de Investimento', 'Perda em Investimento', 'Ajuste'];
+            const filteredTxs = localTransactions.filter(t => { let transactionDate; if (t.sourceType === 'creditCard') { const card = localCreditCards.find(c => c.id === t.sourceId); if (!card) return false; const invoicePeriod = getInvoiceDate(t.date, card.closeDay); transactionDate = new Date(invoicePeriod.year, invoicePeriod.month); } else { transactionDate = new Date(t.date + 'T12:00:00'); } const yearMatch = year === 'all' || transactionDate.getFullYear() == year; const monthMatch = month === 'all' || transactionDate.getMonth() == month; return yearMatch && monthMatch; });
+            let totalIncome = 0, totalExpenses = 0;
+            filteredTxs.filter(t => t.type === 'income' && !nonOpCats.includes(t.category)).sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(t => { incomeTableBody.innerHTML += `<tr class="border-b"><td class="p-2 whitespace-nowrap">${new Date(t.date).toLocaleDateString('pt-BR',{timeZone:'UTC'})}</td><td class="p-2">${t.description}</td><td class="p-2 text-right text-green-600">${formatCurrency(t.amount)}</td></tr>`; totalIncome += t.amount; });
+            if(incomeTableBody.innerHTML === '') incomeTableBody.innerHTML = '<tr><td colspan="3" class="text-center p-4 text-slate-500">Nenhuma receita no período.</td></tr>';
+            $('#income-details-total').textContent = formatCurrency(totalIncome);
+            filteredTxs.filter(t => t.type === 'expense' && t.category !== 'Fatura Cartão' && !nonOpCats.includes(t.category)).sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(t => { expenseTableBody.innerHTML += `<tr class="border-b"><td class="p-2 whitespace-nowrap">${new Date(t.date).toLocaleDateString('pt-BR',{timeZone:'UTC'})}</td><td class="p-2">${t.description}</td><td class="p-2 text-right text-red-600">${formatCurrency(t.amount)}</td></tr>`; totalExpenses += t.amount; });
+            if(expenseTableBody.innerHTML === '') expenseTableBody.innerHTML = '<tr><td colspan="3" class="text-center p-4 text-slate-500">Nenhuma despesa no período.</td></tr>';
+            $('#expense-details-total').textContent = formatCurrency(totalExpenses);
+        }
+
+        function updateProjectedBalanceTable() {
+            const monthVal = $('#projected-balance-month-filter').value;
+            const yearVal = $('#projected-balance-year-filter').value;
+            const tableBody = $('#projected-balance-table-body');
+            tableBody.innerHTML = '';
+
+            if (monthVal === 'all' || yearVal === 'all') {
+                tableBody.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-slate-500">Por favor, selecione um mês e ano específicos.</td></tr>';
+                return;
+            }
+            const month = parseInt(monthVal);
+            const year = parseInt(yearVal);
+
+            const startOfMonth = new Date(Date.UTC(year, month, 1));
+            const initialBalances = localAccounts.reduce((s, acc) => s + (acc.initialBalance || 0), 0);
+            const balanceAtStartOfMonth = localTransactions
+                .filter(t => t.sourceType === 'account' && t.reconciled !== false && new Date(t.date + 'T12:00:00') < startOfMonth)
+                .reduce((balance, t) => t.type === 'income' ? balance + t.amount : balance - t.amount, initialBalances);
+
+            const allAccountTxs = localTransactions.filter(t => t.sourceType === 'account');
+
+            const allProjectedCCPayments = [];
+            const groupedInvoices = localTransactions
+                .filter(t => t.sourceType === 'creditCard')
+                .reduce((acc, t) => {
+                    const card = localCreditCards.find(c => c.id === t.sourceId);
+                    if (!card) return acc;
+                    const invoicePeriod = getInvoiceDate(t.date, card.closeDay);
+                    const periodKey = `${card.id}-${invoicePeriod.year}-${invoicePeriod.month}`;
+                    if (!acc[periodKey]) {
+                        acc[periodKey] = { card, year: invoicePeriod.year, month: invoicePeriod.month, transactions: [] };
+                    }
+                    acc[periodKey].transactions.push(t);
+                    return acc;
+                }, {});
+
+            Object.values(groupedInvoices).forEach(invoiceGroup => {
+                const { card, year: invoiceYear, month: invoiceMonth, transactions } = invoiceGroup;
+                const isPaid = localTransactions.some(p => p.creditCardPaymentForInvoice === `${card.id}-${invoiceYear}-${String(invoiceMonth + 1).padStart(2, '0')}`);
+                const totalDue = transactions.reduce((sum, tx) => sum + (tx.type === 'expense' ? tx.amount : -tx.amount), 0);
+
+                if (!isPaid && totalDue > 0) {
+                    let paymentYear = invoiceYear;
+                    let paymentMonth = invoiceMonth;
+                    if (card.dueDay <= card.closeDay) {
+                        paymentMonth += 1;
+                        if (paymentMonth > 11) { paymentMonth = 0; paymentYear += 1; }
+                    }
+                    allProjectedCCPayments.push({ type: 'expense', amount: totalDue, date: new Date(Date.UTC(paymentYear, paymentMonth, card.dueDay)).toISOString().split('T')[0], description: `Pagamento Fatura ${card.name}` });
+                }
+            });
+
+            const allTxsForProjection = [...allAccountTxs, ...allProjectedCCPayments];
+            const txsInMonth = allTxsForProjection.filter(t => {
+                const txDate = new Date(t.date + 'T12:00:00');
+                return txDate.getUTCFullYear() === year && txDate.getUTCMonth() === month;
+            });
+
+            let runningBalance = balanceAtStartOfMonth;
+            const daysInMonth = new Date(year, month + 1, 0).getUTCDate();
+            let tableHtml = `<tr class="border-b bg-slate-50 font-semibold"><td class="p-2">Saldo Inicial do Mês</td><td></td><td></td><td class="p-2 text-right font-semibold ${balanceAtStartOfMonth < 0 ? 'text-red-500' : ''}">${formatCurrency(balanceAtStartOfMonth)}</td></tr>`;
+            let hasMovement = false;
+            for (let day = 1; day <= daysInMonth; day++) {
+                const txsOnDay = txsInMonth.filter(t => new Date(t.date + 'T12:00:00').getUTCDate() === day);
+                if (txsOnDay.length > 0) {
+                    hasMovement = true;
+                    const dateForDay = new Date(Date.UTC(year, month, day));
+                    let dailyIncome = 0; let dailyExpense = 0;
+                    txsOnDay.forEach(t => { if (t.type === 'income') dailyIncome += t.amount; else dailyExpense += t.amount; });
+                    runningBalance += dailyIncome - dailyExpense;
+                    tableHtml += `<tr class="border-b"><td class="p-2 font-medium">${dateForDay.toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td><td class="p-2 text-right text-green-600">${dailyIncome > 0 ? formatCurrency(dailyIncome) : '-'}</td><td class="p-2 text-right text-red-600">${dailyExpense > 0 ? formatCurrency(dailyExpense) : '-'}</td><td class="p-2 text-right font-semibold ${runningBalance < 0 ? 'text-red-500' : ''}">${formatCurrency(runningBalance)}</td></tr>`;
+                }
+            }
+            if (!hasMovement) { tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-4 text-slate-500">Nenhuma movimentação projetada para o mês selecionado.</td></tr>`; } else { tableBody.innerHTML = tableHtml; }
+        }
+        
+        function renderPieChart(canvasId, transactions, type, label){ if(charts[canvasId]) charts[canvasId].destroy(); let filteredTxs = transactions.filter(t => t.type === type && !['Transferência', 'Investimentos', 'Investimento - Aporte', 'Investimento - Resgate', 'Fatura Cartão', 'Ajuste', 'Rendimento de Investimento', 'Perda em Investimento'].includes(t.category)); const dataByCategory = filteredTxs.reduce((acc, t) => { acc[t.category] = (acc[t.category] || 0) + t.amount; return acc; }, {}); const labels = Object.keys(dataByCategory); const data = Object.values(dataByCategory); const ctx = $(`#${canvasId}`).getContext('2d'); if(labels.length === 0){ ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); ctx.font = '14px Inter'; ctx.fillStyle = '#64748b'; ctx.textAlign = 'center'; ctx.fillText(`Sem dados de ${label.toLowerCase()} para o período.`, ctx.canvas.width / 2, ctx.canvas.height / 2); return; } charts[canvasId] = new Chart(ctx, { type: 'pie', data: { labels, datasets: [{ label, data, backgroundColor: ['#22c55e', '#ef4444', '#3b82f6', '#eab308', '#8b5cf6', '#ec4899', '#10b981', '#6366f1', '#f59e0b', '#d946ef', '#06b6d4'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: (c) => `${c.label}: ${formatCurrency(c.parsed)}` } } } } }); }
+        function renderMonthlyLineChart(transactions) { const canvasId = 'balance-line-chart'; if(charts[canvasId]) charts[canvasId].destroy(); const months = Array(12).fill(0); transactions.filter(t => !['Transferência', 'Investimentos', 'Investimento - Aporte', 'Investimento - Resgate', 'Fatura Cartão', 'Ajuste', 'Rendimento de Investimento', 'Perda em Investimento'].includes(t.category)).forEach(t => { const month = new Date(t.date + 'T12:00:00').getUTCMonth(); months[month] += t.type === 'income' ? t.amount : -t.amount; }); const ctx = $(`#${canvasId}`).getContext('2d'); charts[canvasId] = new Chart(ctx, { type: 'line', data: { labels: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'], datasets: [{ label: 'Saldo Mensal', data: months, borderColor: '#3b82f6', tension: 0.3, fill: false }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `${c.dataset.label}: ${formatCurrency(c.parsed.y)}` } } }, scales: { y: { beginAtZero: true, ticks: { callback: v => formatCurrency(v) } } } } }); }
+        function renderMonthlyBarChart(transactions) { const canvasId = 'income-expense-bar-chart'; if(charts[canvasId]) charts[canvasId].destroy(); const incomeData = Array(12).fill(0); const expenseData = Array(12).fill(0); transactions.filter(t => !['Transferência', 'Investimentos', 'Investimento - Aporte', 'Investimento - Resgate', 'Fatura Cartão', 'Ajuste', 'Rendimento de Investimento', 'Perda em Investimento'].includes(t.category)).forEach(t => { const month = new Date(t.date + 'T12:00:00').getUTCMonth(); if(t.type === 'income') incomeData[month] += t.amount; else expenseData[month] += t.amount; }); const ctx = $(`#${canvasId}`).getContext('2d'); charts[canvasId] = new Chart(ctx, { type: 'bar', data: { labels: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'], datasets: [{ label: 'Receitas', data: incomeData, backgroundColor: '#22c55e' }, { label: 'Despesas', data: expenseData, backgroundColor: '#ef4444' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { tooltip: { callbacks: { label: c => `${c.dataset.label}: ${formatCurrency(c.parsed.y)}` } } }, scales: { x: { stacked: false }, y: { stacked: false, beginAtZero: true, ticks: { callback: v => formatCurrency(v) } } } } }); }
+        function renderCategoryEvolutionChart(canvasId, type, year, category) { if (charts[canvasId]) charts[canvasId].destroy(); const ctx = $(`#${canvasId}`).getContext('2d'); if (!category) { ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); ctx.font = '14px Inter'; ctx.fillStyle = '#64748b'; ctx.textAlign = 'center'; ctx.fillText(`Selecione uma categoria para começar.`, ctx.canvas.width / 2, ctx.canvas.height / 2); return; } const monthlyData = Array(12).fill(0); localTransactions.filter(t => { const txDate = new Date(t.date + 'T12:00:00'); return t.type === type && t.category === category && txDate.getFullYear() == year; }).forEach(t => { const month = new Date(t.date + 'T12:00:00').getUTCMonth(); monthlyData[month] += t.amount; }); const color = type === 'income' ? '#22c55e' : '#ef4444'; charts[canvasId] = new Chart(ctx, { type: 'line', data: { labels: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'], datasets: [{ label: category, data: monthlyData, borderColor: color, backgroundColor: `${color}33`, fill: true, tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `${c.dataset.label}: ${formatCurrency(c.parsed.y)}` } } }, scales: { y: { beginAtZero: true, ticks: { callback: v => formatCurrency(v) } } } } }); }
+        function renderExpenseTypeChart(transactions) { const canvasId = 'expense-type-pie-chart'; if (charts[canvasId]) charts[canvasId].destroy(); const ctx = $(`#${canvasId}`).getContext('2d'); const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0); const expensesByType = transactions.filter(t => t.type === 'expense' && t.expenseType).reduce((acc, t) => { acc[t.expenseType] = (acc[t.expenseType] || 0) + t.amount; return acc; }, {}); if (Object.keys(expensesByType).length === 0 || totalIncome === 0) { ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); ctx.font = '14px Inter'; ctx.fillStyle = '#64748b'; ctx.textAlign = 'center'; ctx.fillText('Sem dados de despesas ou receitas para o período.', ctx.canvas.width / 2, ctx.canvas.height / 2); return; } const labels = Object.keys(expensesByType); const dataInPercentage = labels.map(label => (expensesByType[label] / totalIncome) * 100); const dataInCurrency = labels.map(label => expensesByType[label]); charts[canvasId] = new Chart(ctx, { type: 'doughnut', data: { labels: labels, datasets: [{ label: '% da Receita', data: dataInPercentage, backgroundColor: ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#10b981'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: function(context) { const label = context.label || ''; const percentage = context.parsed.toFixed(2); const currencyValue = dataInCurrency[context.dataIndex]; return `${label}: ${formatCurrency(currencyValue)} (${percentage}%)`; } } } } } }); }
+        function renderMonthlyInvestmentReturnChart(year, investmentType) { const canvasId = 'investment-returns-percent-chart'; if(charts[canvasId]) charts[canvasId].destroy(); const ctx = $(`#${canvasId}`).getContext('2d'); const monthlyReturns = Array(12).fill(0); for (let month = 0; month < 12; month++) { const startDate = new Date(year, month, 1); const endDate = new Date(year, month + 1, 0); const relevantAssets = investmentType === 'all' ? localInvestmentAssets : localInvestmentAssets.filter(a => a.type === investmentType); const relevantAssetIds = relevantAssets.map(a => a.id); const assetTransactions = localTransactions.filter(t => relevantAssetIds.includes(t.investmentAssetId)); const costBaseAtMonthStart = assetTransactions.filter(t => new Date(t.date + 'T12:00:00') < startDate && (t.category === 'Investimento - Aporte' || t.category === 'Investimento - Resgate')).reduce((sum, t) => sum + (t.category === 'Investimento - Aporte' ? t.amount : -t.amount), 0); const netReturnsInMonth = assetTransactions.filter(t => { const txDate = new Date(t.date + 'T12:00:00'); return txDate >= startDate && txDate <= endDate && (t.category === 'Rendimento de Investimento' || t.category === 'Perda em Investimento'); }).reduce((sum, t) => sum + (t.category === 'Rendimento de Investimento' ? t.amount : -t.amount), 0); if (costBaseAtMonthStart > 0) { monthlyReturns[month] = (netReturnsInMonth / costBaseAtMonthStart) * 100; } else { monthlyReturns[month] = 0; } } charts[canvasId] = new Chart(ctx, { type: 'line', data: { labels: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'], datasets: [{ label: 'Rendimento Mensal (%)', data: monthlyReturns, borderColor: '#0ea5e9', tension: 0.3, fill: false }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y.toFixed(2)}%` } } }, scales: { y: { ticks: { callback: value => `${value.toFixed(2)}%` } } } } }); }
+        function renderInvestmentPie(canvasId, assets, groupBy, label){ if(charts[canvasId]) charts[canvasId].destroy(); const activeAssets = assets.filter(a => (a.currentValue || 0) > 0); const dataGrouped = activeAssets.reduce((acc, asset) => { const key = asset[groupBy]; acc[key] = (acc[key] || 0) + asset.currentValue; return acc; }, {}); const labels = Object.keys(dataGrouped); const data = Object.values(dataGrouped); const ctx = $(`#${canvasId}`).getContext('2d'); if(labels.length === 0){ ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); ctx.font = '14px Inter'; ctx.fillStyle = '#64748b'; ctx.textAlign = 'center'; ctx.fillText(`Sem investimentos para exibir.`, ctx.canvas.width / 2, ctx.canvas.height / 2); return; } charts[canvasId] = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ label, data, backgroundColor: ['#14b8a6', '#f97316', '#0ea5e9', '#d946ef', '#f59e0b', '#0d9488', '#fbbf24', '#a855f7', '#be185d', '#84cc16'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: c => `${c.label}: ${formatCurrency(c.parsed)}` } } } } }); }
+        function renderInvestmentReturnsByTypeChart(transactions) { const canvasId = 'investment-returns-by-type-chart'; if(charts[canvasId]) charts[canvasId].destroy(); const returnsByType = {}; transactions.filter(t => t.category === 'Rendimento de Investimento' || t.category === 'Perda em Investimento').forEach(t => { const asset = localInvestmentAssets.find(a => a.id === t.investmentAssetId); if (asset && asset.type) { const assetType = asset.type; if (!returnsByType[assetType]) { returnsByType[assetType] = 0; } const amount = t.type === 'income' ? t.amount : -t.amount; returnsByType[assetType] += amount; } }); const labels = Object.keys(returnsByType); const data = Object.values(returnsByType); const ctx = $(`#${canvasId}`).getContext('2d'); if (labels.length === 0) { ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); ctx.font = '14px Inter'; ctx.fillStyle = '#64748b'; ctx.textAlign = 'center'; ctx.fillText('Sem dados de rendimentos para o ano selecionado.', ctx.canvas.width / 2, 50); return; } charts[canvasId] = new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ label: 'Rendimento Total', data: data, backgroundColor: data.map(v => v >= 0 ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)'), borderColor: data.map(v => v >= 0 ? 'rgba(22, 163, 74, 1)' : 'rgba(220, 38, 38, 1)'), borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `Rendimento: ${formatCurrency(c.raw)}` } } }, scales: { x: { ticks: { callback: v => formatCurrency(v) } } } } }); }
+        function renderInvestmentReturnsByAssetChart(transactions, assetTypeFilter) { const canvasId = 'investment-returns-by-asset-chart'; if (charts[canvasId]) charts[canvasId].destroy(); const returnsByAsset = {}; let filteredTransactions = transactions.filter(t => t.category === 'Rendimento de Investimento' || t.category === 'Perda em Investimento'); filteredTransactions.forEach(t => { const asset = localInvestmentAssets.find(a => a.id === t.investmentAssetId); if (asset) { if (assetTypeFilter !== 'all' && asset.type !== assetTypeFilter) { return; } const assetName = asset.name; if (!returnsByAsset[assetName]) { returnsByAsset[assetName] = 0; } const amount = t.type === 'income' ? t.amount : -t.amount; returnsByAsset[assetName] += amount; } }); const labels = Object.keys(returnsByAsset); const data = Object.values(returnsByAsset); const ctx = $(`#${canvasId}`).getContext('2d'); if (labels.length === 0) { ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); ctx.font = '14px Inter'; ctx.fillStyle = '#64748b'; ctx.textAlign = 'center'; ctx.fillText('Sem dados de rendimentos para os filtros selecionados.', ctx.canvas.width / 2, 50); return; } charts[canvasId] = new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ label: 'Rendimento Total por Ativo', data: data, backgroundColor: data.map(v => v >= 0 ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)'), borderColor: data.map(v => v >= 0 ? 'rgba(22, 163, 74, 1)' : 'rgba(220, 38, 38, 1)'), borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `Rendimento: ${formatCurrency(c.raw)}` } } }, scales: { x: { ticks: { callback: v => formatCurrency(v) } } } } }); }
+        
+        function displayInvestmentHistoryModal(assetId) {
+            const asset = localInvestmentAssets.find(a => a.id === assetId);
+            if (!asset) { showMessage("Ativo não encontrado."); return; }
+            $('#details-asset-name').textContent = asset.name;
+            const historyListEl = $('#investment-history-list');
+            historyListEl.innerHTML = '';
+            const transactionsForAsset = localTransactions.filter(t => t.investmentAssetId === assetId).sort((a, b) => new Date(b.date) - new Date(a.date));
+            if (transactionsForAsset.length === 0) {
+                historyListEl.innerHTML = '<p class="text-slate-500 text-center py-8">Nenhuma transação encontrada para este ativo.</p>';
+            } else {
+                transactionsForAsset.forEach(t => {
+                    let colorClass = 'slate'; let sign = '';
+                    if (t.category === 'Investimento - Aporte') { colorClass = 'green'; sign = '+'; }
+                    else if (t.category === 'Investimento - Resgate') { colorClass = 'orange'; sign = '-'; }
+                    else if (t.category === 'Rendimento de Investimento') { colorClass = 'blue'; sign = '+'; }
+                    else if (t.category === 'Perda em Investimento') { colorClass = 'red'; sign = '-'; }
+                    historyListEl.innerHTML += `<div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border"><div class="flex-grow"><p class="font-semibold">${t.description}</p><p class="text-sm text-slate-500">${new Date(t.date).toLocaleDateString('pt-BR',{timeZone:'UTC'})} - ${t.category}</p></div><div class="text-right flex items-center space-x-2"><p class="font-bold w-32 text-right text-${colorClass}-600">${sign} ${formatCurrency(t.amount)}</p><button class="delete-btn p-1.5 rounded-full text-slate-400 hover:bg-slate-100 hover:text-red-600 transition-colors" data-id="${t.id}" title="Excluir Transação"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button></div></div>`;
+                });
+            }
+            toggleModal($('#investment-details-modal'), true);
+        }
+
+        function displayInvoicesModal(cardId) {
+            selectedCreditCardForInvoices = localCreditCards.find(c => c.id === cardId);
+            if (!selectedCreditCardForInvoices) { showMessage("Cartão de crédito não encontrado."); return; }
+            $('#invoice-card-name').textContent = selectedCreditCardForInvoices.name;
+            const invoicesListEl = $('#invoices-list');
+            invoicesListEl.innerHTML = '';
+            const transactionsForCard = localTransactions.filter(t => t.sourceId === cardId && t.sourceType === 'creditCard');
+            const invoicesMap = transactionsForCard.reduce((acc, tx) => {
+                const invoicePeriod = getInvoiceDate(tx.date, selectedCreditCardForInvoices.closeDay);
+                const periodKey = `${invoicePeriod.year}-${String(invoicePeriod.month + 1).padStart(2, '0')}`;
+                if (!acc[periodKey]) { acc[periodKey] = { totalExpenses: 0, totalChargebacks: 0, transactions: [] }; }
+                if (tx.type === 'expense') { acc[periodKey].totalExpenses += tx.amount; } else if (tx.type === 'chargeback') { acc[periodKey].totalChargebacks += tx.amount; }
+                acc[periodKey].transactions.push(tx);
+                return acc;
+            }, {});
+            const sortedInvoicePeriods = Object.keys(invoicesMap).sort().reverse();
+            if (sortedInvoicePeriods.length === 0) {
+                invoicesListEl.innerHTML = '<p class="text-slate-500 text-center py-8">Nenhuma fatura encontrada.</p>';
+            } else {
+                sortedInvoicePeriods.forEach(periodKey => {
+                    const invoice = invoicesMap[periodKey];
+                    const totalDue = invoice.totalExpenses - invoice.totalChargebacks;
+                    const [year, monthNum] = periodKey.split('-');
+                    const invoiceDate = new Date(parseInt(year), parseInt(monthNum) - 1);
+                    const invoiceLabel = invoiceDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+                    const paymentKey = `${selectedCreditCardForInvoices.id}-${year}-${monthNum}`;
+                    const isPaid = localTransactions.some(p => p.creditCardPaymentForInvoice === paymentKey);
+                    let actionButtonHtml = '';
+                    if (!isPaid && totalDue > 0) {
+                        actionButtonHtml = `<button class="manual-pay-btn bg-blue-500 text-white px-3 py-1 rounded-md text-xs shadow-sm hover:bg-blue-600 transition-colors" data-invoice-period="${paymentKey}" data-card-name="${selectedCreditCardForInvoices.name}" data-invoice-label="${invoiceLabel}">Marcar como Paga</button>`;
+                    }
+                    invoicesListEl.innerHTML += `<div class="bg-slate-50 p-4 rounded-lg border flex flex-col sm:flex-row justify-between items-center gap-4"><div class="flex-grow"><p class="font-semibold text-slate-700">Fatura de ${invoiceLabel}</p><p class="text-sm text-slate-500">Valor Total: <span class="font-bold">${formatCurrency(totalDue)}</span></p><p class="text-sm text-slate-500">Status: <span class="font-semibold ${isPaid ? 'text-green-600' : (totalDue > 0 ? 'text-red-600' : 'text-slate-500')}">${isPaid ? 'Paga' : (totalDue > 0 ? 'Em Aberto' : 'Sem Despesa')}</span></p></div><div class="flex-shrink-0">${actionButtonHtml}</div></div>`;
+                });
+            }
+            toggleModal($('#invoice-management-modal'), true);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const handleAdd = async (collectionName, data) => { try { await addDoc(collection(db, `artifacts/${appId}/users/${userId}/${collectionName}`), data); } catch (error) { console.error(`Error adding document to ${collectionName}:`, error); showMessage(`Erro ao salvar ${collectionName}.`); } };
+            
+            $('#reset-data-btn').addEventListener('click', resetAndSignOut);
+
+            $('#add-account-btn').addEventListener('click', () => { $('#account-form').reset(); $('#edit-account-id').value = ''; $('#account-modal-title').textContent = 'Nova Conta'; $('#initial-balance-wrapper').classList.remove('hidden'); $('#edit-balance-wrapper').classList.add('hidden'); $('#current-balance').disabled = false; $('#edit-account-buttons').classList.add('hidden'); toggleModal($('#account-modal'), true); });
+            $('#add-credit-card-btn').addEventListener('click', () => { $('#credit-card-form').reset(); $('#edit-cc-id').value = ''; $('#cc-modal-title').textContent = 'Novo Cartão de Crédito'; $('#edit-cc-buttons').classList.add('hidden'); toggleModal($('#credit-card-modal'), true); });
+            $('#add-investment-asset-btn').addEventListener('click', () => { $('#investment-asset-form').reset(); toggleModal($('#investment-asset-modal'), true); });
+            $('#add-category-btn').addEventListener('click', () => { $('#category-form').reset(); toggleModal($('#category-modal'), true); });
+            $('#add-transaction-btn').addEventListener('click', () => { const form = $('#transaction-form'); form.reset(); $('#edit-transaction-id').value = ''; $('#transaction-modal-title').textContent = 'Nova Transação em Conta'; const incomeRadio = form.querySelector('input[name="type"][value="income"]'); incomeRadio.checked = true; incomeRadio.dispatchEvent(new Event('change', { bubbles: true })); $('#date').valueAsDate = new Date(); toggleModal($('#transaction-modal'), true); });
+            $('#add-cc-transaction-btn').addEventListener('click', () => { $('#cc-transaction-form').reset(); $('#edit-cc-transaction-id').value = ''; $('#cc-transaction-modal-title').textContent = 'Lançamento no Cartão'; $('#cc-installments').disabled = false; $('#cc-date').valueAsDate = new Date(); populateInvoiceMonthDropdown(); toggleModal($('#cc-transaction-modal'), true); });
+            $('#add-investment-transaction-btn').addEventListener('click', () => { $('#investment-transaction-form').reset(); $('#invest-date').valueAsDate = new Date(); toggleModal($('#investment-transaction-modal'), true); });
+            $('#add-immobilized-asset-btn').addEventListener('click', () => { $('#immobilized-asset-form').reset(); $('#edit-immo-id').value = ''; $('#immo-modal-title').textContent = 'Novo Ativo Imobilizado'; $('#edit-immo-buttons').classList.add('hidden'); toggleModal($('#immobilized-asset-modal'), true); });
+            $('#add-other-asset-btn').addEventListener('click', () => { $('#other-asset-form').reset(); $('#edit-other-id').value = ''; $('#other-modal-title').textContent = 'Novo Ativo (Outros)'; $('#edit-other-buttons').classList.add('hidden'); toggleModal($('#other-asset-modal'), true); });
+
+            $$('.close-modal-btn').forEach(btn => btn.addEventListener('click', () => {
+                const modal = btn.closest('.fixed');
+                toggleModal(modal, false);
+                if (modal.id === 'investment-transaction-modal') {
+                    $('#invest-asset').disabled = false;
+                }
+            }));
+
+            $('#account-form').addEventListener('submit', async e => { e.preventDefault(); const form = e.target.elements; const id = form['edit-account-id'].value; const data = { name: form['account-name'].value, limit: parseFloat(form['account-limit'].value) || 0, loanAmount: parseFloat(form['account-loan-amount'].value) || 0 }; try { if (id) { await updateDoc(doc(db, `artifacts/${appId}/users/${userId}/accounts`, id), data); } else { data.initialBalance = parseFloat(form['initial-balance'].value) || 0; data.active = true; await handleAdd('accounts', data); } toggleModal($('#account-modal'), false); } catch (error) { console.error("Erro ao salvar conta:", error); showMessage("Erro ao salvar conta."); } });
+            $('#credit-card-form').addEventListener('submit', async e => { e.preventDefault(); const form = e.target.elements; const id = form['edit-cc-id'].value; const data = { name: form['cc-name'].value, limit: parseFloat(form['cc-limit'].value), closeDay: parseInt(form['cc-close-day'].value), dueDay: parseInt(form['cc-due-day'].value) }; try { if (id) { await updateDoc(doc(db, `artifacts/${appId}/users/${userId}/creditCards`, id), data); } else { data.active = true; await handleAdd('creditCards', data); } toggleModal($('#credit-card-modal'), false); } catch (error) { console.error("Erro ao salvar cartão:", error); showMessage("Erro ao salvar cartão."); } });
+            $('#investment-asset-form').addEventListener('submit', async e => { e.preventDefault(); const form = e.target.elements; const assetName = form['investment-asset-name'].value; const existing = localInvestmentAssets.find(a => a.name.toLowerCase() === assetName.toLowerCase()); if(existing && existing.active) { showMessage('Um ativo com este nome já existe.'); return; } try { if (existing && !existing.active) { await updateDoc(doc(db, `artifacts/${appId}/users/${userId}/investmentAssets`, existing.id), { active: true }); } else { await handleAdd('investmentAssets', { name: assetName, type: form['investment-asset-type'].value, currentValue: parseFloat(form['investment-initial-value'].value) || 0, active: true }); } toggleModal($('#investment-asset-modal'), false); } catch (error) { console.error("Erro ao salvar ativo:", error); showMessage("Erro ao salvar ativo."); } });
+            $('#category-form').addEventListener('submit', async e => { e.preventDefault(); try { await handleAdd('categories', { name: $('#category-name').value }); toggleModal($('#category-modal'), false); } catch (error) { console.error("Erro ao salvar categoria:", error); showMessage("Erro ao salvar categoria."); } });
+            $('#immobilized-asset-form').addEventListener('submit', async e => { e.preventDefault(); const form = e.target.elements; const id = form['edit-immo-id'].value; const data = { name: form['immo-asset-name'].value, description: form['immo-asset-description'].value, value: parseFloat(form['immo-asset-value'].value) || 0, active: true }; try { if (id) { await updateDoc(doc(db, `artifacts/${appId}/users/${userId}/immobilizedAssets`, id), data); showMessage("Ativo atualizado!"); } else { await handleAdd('immobilizedAssets', data); showMessage("Ativo imobilizado salvo!"); } toggleModal($('#immobilized-asset-modal'), false); } catch (error) { console.error("Erro ao salvar ativo imobilizado:", error); showMessage("Erro ao salvar ativo imobilizado."); } });
+            $('#other-asset-form').addEventListener('submit', async e => { e.preventDefault(); const form = e.target.elements; const id = form['edit-other-id'].value; const data = { name: form['other-asset-name'].value, description: form['other-asset-description'].value, value: parseFloat(form['other-asset-value'].value) || 0, active: true }; try { if (id) { await updateDoc(doc(db, `artifacts/${appId}/users/${userId}/otherAssets`, id), data); showMessage("Ativo atualizado!"); } else { await handleAdd('otherAssets', data); showMessage("Ativo salvo!"); } toggleModal($('#other-asset-modal'), false); } catch (error) { console.error("Erro ao salvar ativo:", error); showMessage("Erro ao salvar ativo."); } });
+            $('#transaction-form').addEventListener('submit', async e => { e.preventDefault(); const form = e.target; const formElements = form.elements; const editId = formElements['edit-transaction-id'].value; const type = formElements.type.value; try { const data = { sourceType: 'account', sourceId: formElements.accountId.value, type: type, description: formElements.description.value, amount: parseFloat(formElements.amount.value), category: formElements.category.value, date: formElements.date.value, }; if (type === 'expense') { data.expenseType = formElements['expense-type'].value; } if (editId) { await updateDoc(doc(db, `artifacts/${appId}/users/${userId}/transactions`, editId), data); showMessage("Transação atualizada!"); } else { if (type === 'transfer') { const amount = parseFloat(formElements.amount.value); if(isNaN(amount) || amount <= 0) { showMessage("Valor inválido."); return; } const date = formElements.date.value; const sourceId = formElements.accountId.value; const destId = formElements.destinationAccountId.value; if (!sourceId || !destId || sourceId === destId) { showMessage("Selecione contas de origem e destino diferentes."); return; } const sourceAccount = localAccounts.find(a => a.id === sourceId); const destAccount = localAccounts.find(a => a.id === destId); const batch = writeBatch(db); batch.set(doc(collection(db, `artifacts/${appId}/users/${userId}/transactions`)), { sourceType: 'account', sourceId: sourceId, type: 'expense', description: `Transferência para ${destAccount.name}`, amount, category: 'Transferência', date, reconciled: true }); batch.set(doc(collection(db, `artifacts/${appId}/users/${userId}/transactions`)), { sourceType: 'account', sourceId: destId, type: 'income', description: `Transferência de ${sourceAccount.name}`, amount, category: 'Transferência', date, reconciled: true }); await batch.commit(); showMessage("Transferência registrada!"); } else { data.reconciled = false; await handleAdd('transactions', data); showMessage("Transação registrada!"); } } toggleModal($('#transaction-modal'), false); form.reset(); } catch (error) { console.error("Erro na transação:", error); showMessage("Erro na transação."); } });
+            $('#cc-transaction-form').addEventListener('submit', async e => {
+                e.preventDefault();
+                const form = e.target.elements;
+                const editId = form['edit-cc-transaction-id'].value;
+                const cardId = form.creditCardId.value;
+                const card = localCreditCards.find(c => c.id === cardId);
+                if (!card) { showMessage("Cartão de crédito não encontrado. Selecione um cartão válido."); return; }
+                const closeDay = card.closeDay;
+                const baseData = { sourceType: 'creditCard', sourceId: cardId, type: form['cc-type'].value, amount: parseFloat(form['cc-amount'].value), category: form['cc-category'].value, originalPurchaseDate: form['cc-date'].value, reconciled: false };
+                if (baseData.type === 'expense') { baseData.expenseType = form['cc-expense-type'].value; }
+                const [invoiceYear, invoiceMonthNum] = $('#cc-invoice-month').value.split('-').map(Number);
+                if (editId) {
+                    const originalTx = localTransactions.find(t => t.id === editId);
+                    const installmentMatch = originalTx.description.match(/(\s\(\d+\/\d+\))$/);
+                    let newDescription = form['cc-description'].value;
+                    if (installmentMatch) { newDescription += installmentMatch[1]; }
+                    const transactionDateForInvoice = new Date(Date.UTC(invoiceYear, invoiceMonthNum - 1, closeDay)).toISOString().split('T')[0];
+                    const dataToUpdate = { ...baseData, description: newDescription, date: transactionDateForInvoice };
+                    try { await updateDoc(doc(db, `artifacts/${appId}/users/${userId}/transactions`, editId), dataToUpdate); showMessage("Lançamento atualizado!"); toggleModal($('#cc-transaction-modal'), false); } catch (error) { console.error("Erro ao atualizar lançamento:", error); showMessage("Erro ao atualizar."); }
+                } else {
+                    const installments = parseInt(form['cc-installments'].value) || 1;
+                    const totalAmount = parseFloat(form['cc-amount'].value);
+                    const installmentAmount = Math.round((totalAmount / installments) * 100) / 100;
+                    const initialInvoiceMonth = invoiceMonthNum - 1; // 0-indexed
+                    const batch = writeBatch(db);
+                    try {
+                        for (let i = 0; i < installments; i++) {
+                            const targetDateForInstallment = new Date(Date.UTC(invoiceYear, initialInvoiceMonth, 1));
+                            targetDateForInstallment.setUTCMonth(targetDateForInstallment.getUTCMonth() + i);
+                            const currentInvoiceDate = new Date(Date.UTC(targetDateForInstallment.getUTCFullYear(), targetDateForInstallment.getUTCMonth(), closeDay));
+                            const installmentData = { ...baseData, amount: installmentAmount, description: `${form['cc-description'].value}${installments > 1 ? ` (${i + 1}/${installments})` : ''}`, date: currentInvoiceDate.toISOString().split('T')[0], };
+                            batch.set(doc(collection(db, `artifacts/${appId}/users/${userId}/transactions`)), installmentData);
+                        }
+                        await batch.commit(); showMessage("Lançamento salvo!"); toggleModal($('#cc-transaction-modal'), false);
+                    } catch (error) { console.error("Erro ao salvar lançamento:", error); showMessage("Erro ao salvar."); }
+                }
+            });
+            $('#investment-transaction-form').addEventListener('submit', async e => { e.preventDefault(); const form = e.target.elements; const type = form['invest-type'].value; const assetId = form.investmentAssetId.value; const asset = localInvestmentAssets.find(a => a.id === assetId); if (!asset) { showMessage("Ativo não encontrado."); return; } const amount = parseFloat(form['invest-amount'].value); const data = { sourceType: 'account', sourceId: form.accountId.value, type: type === 'aporte' ? 'expense' : 'income', description: `${type.charAt(0).toUpperCase() + type.slice(1)} em ${asset.name}`, amount, category: `Investimento - ${type.charAt(0).toUpperCase() + type.slice(1)}`, date: form['invest-date'].value, reconciled: true, investmentAssetId: assetId, expenseType: 'Investimentos' }; const newCurrentValue = type === 'aporte' ? (asset.currentValue || 0) + amount : (asset.currentValue || 0) - amount; const batch = writeBatch(db); try { batch.set(doc(collection(db, `artifacts/${appId}/users/${userId}/transactions`)), data); batch.update(doc(db, `artifacts/${appId}/users/${userId}/investmentAssets`, assetId), { currentValue: newCurrentValue, lastUpdateDate: new Date().toISOString().split('T')[0] }); await batch.commit(); showMessage("Movimentação salva!"); toggleModal($('#investment-transaction-modal'), false); } catch (error) { console.error("Erro ao salvar movimentação:", error); showMessage("Erro ao salvar."); } });
+            $('#update-investment-form').addEventListener('submit', async e => { e.preventDefault(); const assetId = $('#update-investment-asset-id').value; const newValue = parseFloat($('#current-market-value').value); const newType = $('#update-investment-asset-type').value; const updateDate = $('#update-investment-date').value; const asset = localInvestmentAssets.find(a => a.id === assetId); if (!asset) { showMessage("Ativo não encontrado."); toggleModal($('#update-investment-modal'), false); return; } const oldValue = asset.currentValue || 0; const gainLoss = newValue - oldValue; const batch = writeBatch(db); try { batch.update(doc(db, `artifacts/${appId}/users/${userId}/investmentAssets`, assetId), { currentValue: newValue, lastUpdateDate: updateDate, type: newType }); if (Math.abs(gainLoss) > 0.001) { const transRef = doc(collection(db, `artifacts/${appId}/users/${userId}/transactions`)); batch.set(transRef, { sourceType: 'investment', sourceId: assetId, type: gainLoss > 0 ? 'income' : 'expense', description: `Ajuste de valor: ${asset.name}`, amount: Math.abs(gainLoss), category: gainLoss > 0 ? 'Rendimento de Investimento' : 'Perda em Investimento', date: updateDate, reconciled: true, investmentAssetId: assetId }); } await batch.commit(); showMessage("Ativo atualizado!"); toggleModal($('#update-investment-modal'), false); } catch (error) { console.error("Erro ao atualizar ativo:", error); showMessage("Erro ao atualizar."); } });
+            $('#finalize-investment-form').addEventListener('submit', async e => { e.preventDefault(); const assetId = $('#finalize-investment-asset-id').value; const destAccountId = $('#finalize-destination-account').value; const asset = localInvestmentAssets.find(a => a.id === assetId); if (!asset || asset.currentValue <= 0) { showMessage("Ativo inválido ou com valor zero."); return; } const batch = writeBatch(db); try { batch.set(doc(collection(db, `artifacts/${appId}/users/${userId}/transactions`)), { sourceType: 'account', sourceId: destAccountId, type: 'income', description: `Resgate Total de ${asset.name}`, amount: asset.currentValue, category: 'Investimento - Resgate', date: new Date().toISOString().split('T')[0], reconciled: true, investmentAssetId: assetId }); batch.update(doc(db, `artifacts/${appId}/users/${userId}/investmentAssets`, assetId), { currentValue: 0, active: false }); await batch.commit(); showMessage("Investimento finalizado!"); toggleModal($('#finalize-investment-modal'), false); } catch (error) { console.error("Erro ao finalizar:", error); showMessage("Erro ao finalizar."); } });
+            $('#pay-invoice-form').addEventListener('submit', async e => {
+                e.preventDefault();
+                const cardId = $('#pay-invoice-card-id').value;
+                const invoicePeriodKey = $('#pay-invoice-month-year').value;
+                const paymentAccountId = $('#pay-invoice-account').value;
+                const paymentDate = $('#pay-invoice-date').value;
+                const card = localCreditCards.find(c => c.id === cardId);
+                if (!card) { showMessage("Cartão não encontrado."); return; }
+                const [keyCardId, yearStr, monthStr] = invoicePeriodKey.split('-');
+                const year = parseInt(yearStr, 10);
+                const month = parseInt(monthStr, 10);
+                if (keyCardId !== cardId) { console.error("Mismatched card ID in payment form."); showMessage("Ocorreu um erro. ID do cartão inconsistente."); return; }
+                const invoiceTxsToPay = localTransactions.filter(t => { if (t.sourceId !== cardId || t.paymentId) return false; const invoicePeriod = getInvoiceDate(t.date, card.closeDay); return invoicePeriod.year === year && invoicePeriod.month === (month - 1); });
+                if (invoiceTxsToPay.length === 0) { showMessage("Nenhuma transação encontrada para esta fatura ou a fatura já foi paga."); toggleModal($('#pay-invoice-modal'), false); return; }
+                const totalAmountToPay = invoiceTxsToPay.reduce((sum, tx) => sum + (tx.type === 'expense' ? tx.amount : -tx.amount), 0);
+                const batch = writeBatch(db);
+                const paymentDocRef = doc(collection(db, `artifacts/${appId}/users/${userId}/transactions`));
+                try {
+                    batch.set(paymentDocRef, { sourceType: 'account', sourceId: paymentAccountId, type: 'expense', description: `Pagamento Fatura ${card.name} (${year}-${String(month).padStart(2, '0')})`, amount: totalAmountToPay, category: 'Fatura Cartão', date: paymentDate, reconciled: true, creditCardPaymentForInvoice: invoicePeriodKey });
+                    invoiceTxsToPay.forEach(tx => { batch.update(doc(db, `artifacts/${appId}/users/${userId}/transactions`, tx.id), { paymentId: paymentDocRef.id }); });
+                    await batch.commit(); showMessage("Fatura paga!"); toggleModal($('#pay-invoice-modal'), false);
+                } catch (error) { console.error("Erro ao pagar fatura:", error); showMessage("Erro ao processar o pagamento da fatura."); }
+            });
+            $('#delete-immo-btn').addEventListener('click', () => { const id = $('#edit-immo-id').value; if (!id) return; showConfirmation("Tem certeza que deseja excluir este ativo imobilizado?", async () => { try { await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/immobilizedAssets`, id)); showMessage("Ativo excluído!"); toggleModal($('#immobilized-asset-modal'), false); } catch (error) { console.error("Erro ao excluir ativo imobilizado:", error); showMessage("Erro ao excluir."); } }); });
+            $('#delete-other-btn').addEventListener('click', () => { const id = $('#edit-other-id').value; if (!id) return; showConfirmation("Tem certeza que deseja excluir este ativo?", async () => { try { await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/otherAssets`, id)); showMessage("Ativo excluído!"); toggleModal($('#other-asset-modal'), false); } catch (error) { console.error("Erro ao excluir ativo:", error); showMessage("Erro ao excluir."); } }); });
+            
+            $('body').addEventListener('click', async e => {
+                if(e.target.closest('.edit-account-btn')) {
+                    const id = e.target.closest('.edit-account-btn').dataset.id;
+                    const acc = localAccounts.find(a => a.id === id);
+                    if(acc) {
+                       const reconciledTx = localTransactions.filter(t => t.reconciled !== false && t.sourceId === acc.id);
+                       const income = reconciledTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+                       const expense = reconciledTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+                       const balance = (acc.initialBalance || 0) + income - expense;
+                        $('#account-form').reset();
+                        $('#edit-account-id').value = id;
+                        $('#account-modal-title').textContent = 'Editar Conta';
+                        $('#account-name').value = acc.name;
+                        $('#initial-balance-wrapper').classList.add('hidden');
+                        $('#edit-balance-wrapper').classList.remove('hidden');
+                        $('#current-balance').value = balance.toFixed(2);
+                        $('#account-limit').value = acc.limit || 0;
+                        $('#account-loan-amount').value = acc.loanAmount || 0;
+                        $('#edit-account-buttons').classList.remove('hidden');
+                        toggleModal($('#account-modal'), true);
+                    }
+                }
+                if (e.target.closest('.edit-transaction-btn')) { const id = e.target.closest('.edit-transaction-btn').dataset.id; const tx = localTransactions.find(t => t.id === id); if (tx) { if (tx.category === 'Transferência' || tx.category === 'Fatura Cartão') { showMessage("Este tipo de transação não pode ser editada diretamente."); return; } const form = $('#transaction-form'); form.reset(); $('#edit-transaction-id').value = id; $('#transaction-modal-title').textContent = 'Editar Transação'; const radio = form.querySelector(`input[name="type"][value="${tx.type}"]`); if (radio) { radio.checked = true; radio.dispatchEvent(new Event('change', { bubbles: true })); } $('#description').value = tx.description; $('#amount').value = tx.amount; $('#account').value = tx.sourceId; $('#category').value = tx.category; $('#date').value = tx.date; if(tx.expenseType) { $('#expense-type').value = tx.expenseType; } toggleModal($('#transaction-modal'), true); } }
+                if(e.target.closest('.edit-cc-btn')) { const id = e.target.closest('.edit-cc-btn').dataset.id; const card = localCreditCards.find(c => c.id === id); if(card) { $('#credit-card-form').reset(); $('#edit-cc-id').value = id; $('#cc-modal-title').textContent = 'Editar Cartão'; $('#cc-name').value = card.name; $('#cc-limit').value = card.limit; $('#cc-close-day').value = card.closeDay; $('#cc-due-day').value = card.dueDay; $('#edit-cc-buttons').classList.remove('hidden'); toggleModal($('#credit-card-modal'), true); } }
+                if(e.target.closest('.edit-cc-expense-btn')) { const id = e.target.closest('.edit-cc-expense-btn').dataset.id; const tx = localTransactions.find(t => t.id === id); if(tx) { $('#cc-transaction-form').reset(); $('#edit-cc-transaction-id').value = id; $('#cc-transaction-modal-title').textContent = 'Editar Lançamento'; const isInstallment = /\s\(\d+\/\d+\)$/.test(tx.description); $('#cc-description').value = tx.description.replace(/\s\(\d+\/\d+\)$/, ''); $('#cc-amount').value = tx.amount; $('#cc-category').value = tx.category; $('#cc-account').value = tx.sourceId; $('#cc-date').value = tx.originalPurchaseDate || tx.date; if(tx.expenseType) { $('#cc-expense-type').value = tx.expenseType; } $('#cc-installments').value = 1; $('#cc-installments').disabled = isInstallment; $('input[name="cc-type"][value="'+ tx.type +'"]').checked = true; populateInvoiceMonthDropdown(); const card = localCreditCards.find(c => c.id === tx.sourceId); if (card) { const invoicePeriod = getInvoiceDate(tx.date, card.closeDay); const invoiceValue = `${invoicePeriod.year}-${invoicePeriod.month + 1}`; $('#cc-invoice-month').value = invoiceValue; } toggleModal($('#cc-transaction-modal'), true); } }
+                if(e.target.closest('.update-investment-btn')) { const assetId = e.target.closest('.update-investment-btn').dataset.assetId; const asset = localInvestmentAssets.find(a => a.id === assetId); if (asset) { $('#update-investment-asset-id').value = assetId; $('#current-market-value').value = asset.currentValue || 0; $('#update-investment-asset-type').value = asset.type; $('#update-investment-date').valueAsDate = new Date(); toggleModal($('#update-investment-modal'), true); } }
+                if(e.target.closest('.finalize-investment-btn') && !e.target.closest('.finalize-investment-btn').disabled){ const btn = e.target.closest('.finalize-investment-btn'); $('#finalize-investment-asset-id').value = btn.dataset.assetId; $('#finalize-asset-name').textContent = btn.dataset.assetName; $('#finalize-asset-value').textContent = formatCurrency(parseFloat(btn.dataset.currentValue)); updateDropdowns(); toggleModal($('#finalize-investment-modal'), true); }
+                if(e.target.closest('.edit-contributions-btn')) { const assetId = e.target.closest('.edit-contributions-btn').dataset.assetId; displayInvestmentHistoryModal(assetId); }
+                if(e.target.closest('.partial-redemption-btn')) { const assetId = e.target.closest('.partial-redemption-btn').dataset.assetId; const asset = localInvestmentAssets.find(a => a.id === assetId); if (asset) { $('#investment-transaction-form').reset(); $('#investment-transaction-modal').querySelector('input[name="invest-type"][value="resgate"]').checked = true; $('#invest-asset').value = assetId; $('#invest-asset').disabled = true; $('#invest-date').valueAsDate = new Date(); toggleModal($('#investment-transaction-modal'), true); } }
+                if (e.target.closest('.edit-immo-asset-btn')) { const id = e.target.closest('.edit-immo-asset-btn').dataset.id; const asset = localImmobilizedAssets.find(a => a.id === id); if (asset) { $('#immobilized-asset-form').reset(); $('#edit-immo-id').value = id; $('#immo-modal-title').textContent = 'Editar Ativo Imobilizado'; $('#immo-asset-name').value = asset.name; $('#immo-asset-description').value = asset.description || ''; $('#immo-asset-value').value = asset.value; $('#edit-immo-buttons').classList.remove('hidden'); toggleModal($('#immobilized-asset-modal'), true); } }
+                if (e.target.closest('.edit-other-asset-btn')) { const id = e.target.closest('.edit-other-asset-btn').dataset.id; const asset = localOtherAssets.find(a => a.id === id); if (asset) { $('#other-asset-form').reset(); $('#edit-other-id').value = id; $('#other-modal-title').textContent = 'Editar Ativo (Outros)'; $('#other-asset-name').value = asset.name; $('#other-asset-description').value = asset.description || ''; $('#other-asset-value').value = asset.value; $('#edit-other-buttons').classList.remove('hidden'); toggleModal($('#other-asset-modal'), true); } }
+                if (e.target.closest('.delete-btn')) {
+                    const id = e.target.closest('.delete-btn').dataset.id;
+                    const tx = localTransactions.find(t => t.id === id);
+                    if (!tx) return;
+                    if(tx.category === 'Fatura Cartão' || tx.sourceType === 'manual_adjustment') { showMessage('Pagamentos de fatura não podem ser excluídos diretamente.'); return; }
+                    showConfirmation("Tem certeza que deseja excluir esta transação?", async () => {
+                        const batch = writeBatch(db);
+                        const txRef = doc(db, `artifacts/${appId}/users/${userId}/transactions`, id);
+                        try {
+                            if (tx.investmentAssetId) {
+                                const asset = localInvestmentAssets.find(a => a.id === tx.investmentAssetId);
+                                if (asset) {
+                                    let newCurrentValue = asset.currentValue || 0;
+                                    if (tx.category === 'Investimento - Aporte' || tx.category === 'Rendimento de Investimento') { newCurrentValue -= tx.amount; }
+                                    else if (tx.category === 'Investimento - Resgate' || tx.category === 'Perda em Investimento') { newCurrentValue += tx.amount; }
+                                    const assetRef = doc(db, `artifacts/${appId}/users/${userId}/investmentAssets`, asset.id);
+                                    batch.update(assetRef, { currentValue: newCurrentValue });
+                                }
+                            }
+                            batch.delete(txRef);
+                            await batch.commit();
+                            showMessage("Transação excluída!");
+                            const historyModal = $('#investment-details-modal');
+                            if (historyModal && !historyModal.classList.contains('hidden') && tx.investmentAssetId) { displayInvestmentHistoryModal(tx.investmentAssetId); }
+                        } catch (error) { console.error("Erro ao excluir:", error); showMessage("Erro ao excluir."); }
+                    });
+                }
+                if (e.target.closest('.pay-fatura-btn') && !e.target.closest('.pay-fatura-btn').disabled) { const btn = e.target.closest('.pay-fatura-btn'); const invoicePeriodKey = btn.dataset.invoicePeriod; $('#pay-invoice-card-id').value = btn.dataset.cardId; $('#pay-invoice-month-year').value = invoicePeriodKey; $('#pay-invoice-amount').textContent = formatCurrency(parseFloat(btn.dataset.total)); $('#pay-invoice-details').textContent = `${btn.dataset.cardName} (${btn.dataset.invoiceLabel})`; $('#pay-invoice-date').valueAsDate = new Date(); updateDropdowns(); toggleModal($('#pay-invoice-modal'), true); }
+                if (e.target.closest('.view-invoices-btn')) { const cardId = e.target.closest('.view-invoices-btn').dataset.cardId; displayInvoicesModal(cardId); }
+                if (e.target.closest('.manual-pay-btn')) {
+                    const btn = e.target.closest('.manual-pay-btn');
+                    const invoicePeriodKey = btn.dataset.invoicePeriod;
+                    const cardName = btn.dataset.cardName;
+                    const invoiceLabel = btn.dataset.invoiceLabel;
+                    showConfirmation(`Tem certeza que deseja marcar a fatura de ${cardName} (${invoiceLabel}) como paga manualmente? Esta ação não criará uma despesa em suas contas.`, async () => {
+                        try {
+                            await addDoc(collection(db, `artifacts/${appId}/users/${userId}/transactions`), { sourceType: 'manual_adjustment', sourceId: 'manual', type: 'expense', description: `Pagamento manual da fatura: ${cardName} - ${invoiceLabel}`, amount: 0, category: 'Ajuste', date: new Date().toISOString().split('T')[0], reconciled: true, creditCardPaymentForInvoice: invoicePeriodKey });
+                            showMessage("Fatura marcada como paga!");
+                            if(selectedCreditCardForInvoices) { displayInvoicesModal(selectedCreditCardForInvoices.id); }
+                        } catch (error) { console.error("Erro ao marcar fatura como paga:", error); showMessage("Erro ao marcar a fatura como paga."); }
+                    });
+                }
+            });
+
+            $('#transaction-form').addEventListener('change', e => { if (e.target.name === 'type') { const type = e.target.value; const isExpense = type === 'expense'; const isTransfer = type === 'transfer'; $('#destination-account-wrapper').classList.toggle('hidden', !isTransfer); $('#category-wrapper').classList.toggle('hidden', isTransfer); $('#expense-type-wrapper').classList.toggle('hidden', !isExpense); $('#source-account-label').textContent = isTransfer ? 'Conta de Origem' : 'Conta'; $('#description').required = !isTransfer; $('#category').required = !isTransfer; $('#destination-account').required = isTransfer; } });
+            const populateInvoiceMonthDropdown = () => { const dateInput = $('#cc-date').valueAsDate || new Date(); const cardId = $('#cc-account').value; const card = localCreditCards.find(c => c.id === cardId); const invoiceInfoTextEl = $('#invoice-info-text'); if (!card) { $('#cc-invoice-month').innerHTML = '<option value="">Selecione um cartão</option>'; invoiceInfoTextEl.textContent = "Selecione um cartão para ver a info da fatura."; return; } const invoiceSelect = $('#cc-invoice-month'); const currentInvoiceSelection = invoiceSelect.value; invoiceSelect.innerHTML = ''; const monthFormatter = new Intl.DateTimeFormat('pt-BR', { month: 'long' }); const yearFormatter = new Intl.DateTimeFormat('pt-BR', { year: 'numeric' }); const initialInvoicePeriod = getInvoiceDate(dateInput.toISOString().split('T')[0], card.closeDay); const initialInvoiceDate = new Date(initialInvoicePeriod.year, initialInvoicePeriod.month); for (let i = -2; i <= 6; i++) { const optionDate = new Date(initialInvoiceDate); optionDate.setUTCMonth(initialInvoiceDate.getUTCMonth() + i); const option = document.createElement('option'); option.value = optionDate.getUTCFullYear() + '-' + (optionDate.getUTCMonth() + 1); option.textContent = `${monthFormatter.format(optionDate)} de ${yearFormatter.format(optionDate)}`; invoiceSelect.appendChild(option); } if (currentInvoiceSelection && invoiceSelect.querySelector(`[value="${currentInvoiceSelection}"]`)) { invoiceSelect.value = currentInvoiceSelection; } else { invoiceSelect.value = `${initialInvoicePeriod.year}-${initialInvoicePeriod.month + 1}`; } const selectedInvoiceMonth = new Date(initialInvoicePeriod.year, initialInvoicePeriod.month); const dueDate = new Date(selectedInvoiceMonth.getFullYear(), selectedInvoiceMonth.getMonth(), card.dueDay); invoiceInfoTextEl.textContent = `Esta transação será lançada na fatura de ${monthFormatter.format(selectedInvoiceMonth)}, com vencimento em ${card.dueDay} de ${monthFormatter.format(dueDate)}.`; };
+            $('#cc-date').addEventListener('change', populateInvoiceMonthDropdown);
+            $('#cc-account').addEventListener('change', populateInvoiceMonthDropdown);
+            $('body').addEventListener('change', async e => { if (e.target.classList.contains('reconcile-checkbox')) { const id = e.target.dataset.id; try { if(id) await updateDoc(doc(db, `artifacts/${appId}/users/${userId}/transactions`, id), { reconciled: e.target.checked }); } catch (error) { console.error("Erro ao conciliar:", error); showMessage("Erro ao conciliar."); } } });
+            $$('#month-filter, #year-filter').forEach(el => el.addEventListener('change', processData));
+            $$('#dashboard-month-filter, #dashboard-year-filter-pie, #dashboard-year-filter-lines, #dashboard-invest-type-filter-composition, #dashboard-year-filter-returns-type, #dashboard-invest-type-filter-returns-asset, #dashboard-year-filter-returns-asset, #dashboard-year-filter-expense-cat, #dashboard-expense-cat-filter, #dashboard-year-filter-income-cat, #dashboard-income-cat-filter, #dashboard-year-filter-returns-percent, #dashboard-invest-type-filter-returns-percent, #dashboard-month-filter-expense-type, #dashboard-year-filter-expense-type, #dashboard-table-month-filter, #dashboard-table-year-filter, #projected-balance-month-filter, #projected-balance-year-filter').forEach(el => el.addEventListener('change', updateDashboard));
+            $('#tab-main').addEventListener('click', () => { $('#view-main').classList.remove('hidden'); $('#view-dashboard').classList.add('hidden'); $('#tab-main').classList.add('active'); $('#tab-dashboard').classList.remove('active'); processData(); });
+            $('#tab-dashboard').addEventListener('click', () => { $('#view-main').classList.add('hidden'); $('#view-dashboard').classList.remove('hidden'); $('#tab-main').classList.remove('active'); $('#tab-dashboard').classList.add('active'); updateDashboard(); });
+        });
+    </script>
+</body>
+</html>
